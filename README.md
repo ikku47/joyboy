@@ -1,31 +1,50 @@
 # joyboy
 
-A skill that lets an AI coding agent make finished videos entirely in code: promos, teasers, logo reveals, explainers, app demos, website tours, data stories, reels and short films, with generated music, matching sound effects and narration.
+**Ask your AI coding agent for a video. Get a finished MP4.**
 
-You describe the video in plain words. The agent asks a few simple questions, writes a short script of scenes, renders it on your computer, and hands you an MP4. No video model, no editor and no stock footage are involved, so every frame is exact, repeatable and easy to change.
+joyboy is a skill that lets an agent such as Claude Code make complete videos entirely in code: promos, teasers, logo reveals, explainers, app demos, website tours, data stories, reels and short films, with generated music, matching sound effects and narration. No video model, no editor, no stock footage.
 
-## What it can make
+[![Frames from the joyboy showreel](examples/previews/hero.jpg)](examples/showreel.mp4)
 
-| Area | What you get |
+**[Watch the showreel](examples/showreel.mp4)** (2 min 20 s, with sound). Every scene in it was made by the skill from one short script, [`examples/showreel.py`](examples/showreel.py).
+
+## Examples
+
+Each preview below is a silent clip. Click it to open the full version with sound.
+
+| | |
 |---|---|
-| Pictures | Camera moves over still images: push, pull, pan, tilt, parallax |
-| Type | Titles, kinetic words, quotes, bullet lists, letter-by-letter text, all sized to fit |
-| Data | Counters, bar and column charts, line charts, donuts, heat maps |
-| Places | Real street maps from OpenStreetMap data, with pins and routes |
-| Screens | Real web pages captured and shown in a phone frame or a browser window |
-| Icons | Library icons (about 30 sets), still or animated |
-| Web animation | GSAP scenes captured frame by frame |
-| 3D | Simple glass and metal shapes (GSS), real model files (67.js), and procedural worlds with people (three.js) |
-| People | Illustrated characters that speak with lip sync |
-| Reel effects | Logo-locked fast cuts, logo window, slices, carousel, grid, tunnel, loader, shape wipes |
-| Sound | Music in five moods, a sound for what each scene shows, ambience, narration in many languages |
-| Shapes | Tall, wide, square and 4:5 from the same script |
+| [![Pictures and type](examples/previews/01-pictures-and-type.gif)](examples/01-pictures-and-type.mp4)<br>**Pictures and type.** Camera moves over still images, kinetic words, quotes and lists that size themselves to fit. | [![Data, icons and maps](examples/previews/02-data-icons-maps.gif)](examples/02-data-icons-maps.mp4)<br>**Data, icons and maps.** Counters, charts that draw themselves, library icons, and real street maps from OpenStreetMap. |
+| [![Real web pages](examples/previews/03-real-web-pages.gif)](examples/03-real-web-pages.mp4)<br>**Real web pages.** A live page captured and shown scrolling in a browser window and a phone frame. | [![Web animation](examples/previews/04-web-animation.gif)](examples/04-web-animation.mp4)<br>**Web animation.** GSAP scenes and animated icons, captured frame by frame. |
+| [![3D shapes and models](examples/previews/05-3d-shapes-and-models.gif)](examples/05-3d-shapes-and-models.mp4)<br>**3D shapes and models.** Glass and metal shapes written like a style sheet, and real 3D model files on a turntable. | [![People and worlds](examples/previews/06-people-and-worlds.gif)](examples/06-people-and-worlds.mp4)<br>**People and worlds.** Illustrated characters that talk with lip sync, in a 3D place with weather and film cameras. |
+| [![Reel effects](examples/previews/07-reel-effects.gif)](examples/07-reel-effects.mp4)<br>**Reel effects.** Logo window, slices, carousel, grid, tunnel, shape wipes and a loader, cut on the beat. | |
+
+All content in the examples is sample content.
+
+## How it works
+
+You describe the video in plain words. The agent asks a few simple questions, then writes a short script of scenes like this and renders it on your computer:
+
+```python
+film = Film("spring-sale", size="portrait", mood="upbeat", palette=["#101018", "#ff5a36", "#ffd166"])
+film.intro("SPRING SALE", sub="this weekend only", logo="assets/logo.png")
+film.image("assets/shop.jpg", text="Everything in store", move="push")
+film.stat("40%", "off all shoes")
+film.map("12 Market Street, Springfield", pins=[("We are here", "12 Market Street, Springfield")])
+film.outro("OPEN 9 TO 9", sub="12 Market Street", logo="assets/logo.png")
+film.render()
+```
+
+- **Every frame is computed**, so the result is exact and repeatable.
+- **Changes are small edits.** "Remove that scene", "make it wide for YouTube" or "change the voice" is a line or two, not a new video.
+- **Sound is part of the scene.** Scene lengths snap to the music's beat, and each scene carries the sound of what it shows: ticks for a counter, a scribble for a line being drawn, a pop for a map pin.
+- **Each video keeps its own folder** with the finished file, the code that made it and a readable script.
 
 ## Install
 
-Pick the line for your tool. In every case, start a new session afterwards.
+Pick the line for your tool, then start a new session.
 
-**Claude Code, as a plugin** (updates through the plugin system; the skill appears as `/joyboy:joyboy`):
+**Claude Code, as a plugin** (the skill appears as `/joyboy:joyboy`):
 
 ```bash
 claude plugin marketplace add ikku47/joyboy
@@ -41,7 +60,7 @@ claude plugin install joyboy@joyboy
 curl -fsSL https://raw.githubusercontent.com/ikku47/joyboy/main/install.sh | bash
 ```
 
-Read `install.sh` first if you prefer; it only copies the skill folder into each tool's skills folder and keeps a backup of any copy already there. To choose where it goes, clone the repository and run `bash install.sh --claude`, `--codex`, `--agents`, `--all` or `--dir <folder>`.
+Read [`install.sh`](install.sh) first if you prefer. It only copies the skill folder into each tool's skills folder, and it keeps a backup of any copy already there. To choose where it goes, clone the repository and run `bash install.sh --claude`, `--codex`, `--agents`, `--all` or `--dir <folder>`.
 
 **Any agent that reads the Agent Skills format:**
 
@@ -60,10 +79,28 @@ Ask for a video in your own words:
 - "Make a 20 second teaser for my coffee shop opening on Friday."
 - "Turn these five screenshots into an app demo for Instagram."
 - "Explain how our booking works in a one minute video with a voice-over."
+- "Make a short film: two friends by a campfire in a snowy forest, talking about old phones."
 
-The agent asks up to ten short questions (what it is for, where it will be shown, what you have, what it should say, language, style, length, sound, how it opens and closes, anything to avoid), skipping any you have already answered. Say "you decide" to skip them all.
+The agent asks up to ten short questions (what it is for, where it will be shown, what you have, what it should say, language, style, length, sound, how it opens and closes, anything to avoid) and skips any you have already answered. Say "you decide" to skip them all.
 
-The first video sets up a workspace in `~/joyboy` and installs what it needs once. Every later video reuses it. Each video gets its own folder there with the finished file, the code that made it and a script you can read.
+The first video sets up a workspace in `~/joyboy` and installs what it needs once. Every later video reuses it.
+
+## What it can make
+
+| Area | What you get |
+|---|---|
+| Pictures | Camera moves over still images: push, pull, pan, tilt, parallax |
+| Type | Titles, kinetic words, quotes, bullet lists, letter-by-letter text, all sized to fit |
+| Data | Counters, bar and column charts, line charts, donuts, heat maps |
+| Places | Real street maps from OpenStreetMap data, with pins and routes |
+| Screens | Real web pages captured and shown in a phone frame or a browser window |
+| Icons | Library icons (about 30 sets), still or animated |
+| Web animation | GSAP scenes captured frame by frame |
+| 3D | Glass and metal shapes (GSS), real model files (67.js), and procedural worlds with people (three.js) |
+| People | Illustrated characters that speak with lip sync |
+| Reel effects | Logo-locked fast cuts, logo window, slices, carousel, grid, tunnel, loader, shape wipes |
+| Sound | Music in five moods, a sound for what each scene shows, ambience, narration in many languages |
+| Shapes | Tall, wide, square and 4:5 from the same script |
 
 ## What it needs
 
@@ -104,10 +141,13 @@ The skill downloads these into your workspace when they are first needed; none a
 
 ```
 skills/joyboy/        the skill: SKILL.md, scripts, references
+examples/             example videos, previews and the showreel's script
 .claude-plugin/       plugin and marketplace files for Claude Code
 install.sh            installer for Claude Code, Codex and other agents
 ```
 
+The artwork, model and captured page used in the examples are not included, so `examples/showreel.py` is for reading, not for running as it is.
+
 ## Licence
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). The example videos show sample content; the painted artwork in them belongs to its owner and is not covered by the MIT licence.
