@@ -1,0 +1,12 @@
+{
+  "name": "joyboy",
+  "description": "joyboy: a skill for making videos in code",
+  "owner": { "name": "ikku47" },
+  "plugins": [
+    {
+      "name": "joyboy",
+      "source": "./",
+      "description": "Make any kind of video entirely in code, with generated music, sound effects and narration."
+    }
+  ]
+}

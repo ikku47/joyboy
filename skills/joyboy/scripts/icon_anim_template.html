@@ -1,0 +1,42 @@
+<!doctype html>
+<!-- joyboy animated icons. Copy into a project's assets/, edit, and use film.web("assets/icons.html", dur=4).
+     A token written as two braces, lucide:NAME, two braces (as used in the body below) is replaced with that Lucide icon's SVG (stroke icons, ideal for drawing on); browse names with
+     `ls ~/joyboy/web/node_modules/lucide-static/icons`. The same token form with icon:LuRocket inlines any react-icons icon instead.
+     The motions follow the lucide-animated style (draw on, pop, wiggle, bounce) but run on one paused GSAP timeline,
+     so the capture can step through them frame by frame. -->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; width: 100vw; height: 100vh; overflow: hidden; background: #0d1117; color: #fff; font-family: "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+  .row { position: absolute; inset: 0; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 7vmin; padding: 8vmin; }
+  .item { display: grid; justify-items: center; gap: 2.4vmin; width: 26vmin; }
+  .item svg { width: 18vmin; height: 18vmin; stroke-width: 1.6; color: #ff5a36; overflow: visible; }
+  .item:nth-child(2) svg { color: #58a6ff; } .item:nth-child(3) svg { color: #3fb950; }
+  .item span { font-size: 3.6vmin; font-weight: 600; text-align: center; }
+</style>
+<script src="{{GSAP}}/gsap.min.js"></script>
+<script src="{{GSAP}}/DrawSVGPlugin.min.js"></script>
+</head>
+<body>
+<div class="row">
+  <div class="item">{{lucide:rocket}}<span>Launch</span></div>
+  <div class="item">{{lucide:bell}}<span>Notify</span></div>
+  <div class="item">{{lucide:heart}}<span>Loved</span></div>
+</div>
+<script>
+  gsap.registerPlugin(DrawSVGPlugin);
+  const tl = window.tl = gsap.timeline({ paused: true });
+  document.querySelectorAll(".item").forEach((el, i) => {
+    const svg = el.querySelector("svg"), strokes = svg.querySelectorAll("path, line, circle, rect, polyline, polygon, ellipse"), t = 0.15 + i * 0.35;
+    tl.from(strokes, { drawSVG: "0%", duration: 0.7, ease: "power2.inOut", stagger: 0.08 }, t)        // draw on
+      .from(svg, { scale: 0.6, duration: 0.5, ease: "back.out(2.2)", transformOrigin: "50% 50%" }, t)  // pop
+      .from(el.querySelector("span"), { opacity: 0, y: "2vmin", duration: 0.4, ease: "power2.out" }, t + 0.45);
+  });
+  const [rocket, bell, heart] = document.querySelectorAll(".item svg");
+  tl.to(rocket, { x: "1.2vmin", y: "-1.2vmin", duration: 0.35, ease: "power1.inOut", yoyo: true, repeat: 5 }, 1.6)               // lift
+    .to(bell, { rotation: 14, duration: 0.12, ease: "sine.inOut", yoyo: true, repeat: 9, transformOrigin: "50% 10%" }, 1.8)     // ring
+    .to(heart, { scale: 1.22, duration: 0.22, ease: "power2.out", yoyo: true, repeat: 5, transformOrigin: "50% 50%" }, 2.0);    // beat
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!doctype html>
+<!-- joyboy 3D scene template (GSS: CSS for 3D scenes, compiled to one raymarched shader).
+     Copy into a project's assets/, edit the style sheet inside the script, and use:
+         film.web("assets/scene3d.html", dur=4, clock="virtual")
+     clock="virtual" is required: GSS runs its own clock, and the capture replaces that clock so each video frame is exact.
+     Write the scene like CSS: list objects in @scene, style them with selectors, move them with @keyframes.
+     Set window.joyboyReady = true once the scene is mounted. Keep the canvas filling the page. -->
+<html>
+<head>
+<meta charset="utf-8">
+<style> html, body { margin: 0; width: 100vw; height: 100vh; overflow: hidden; background: #0d1117; } canvas { display: block; width: 100vw; height: 100vh; } </style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script type="module">
+  import { mount } from "{{GSS}}/index.js";
+  const source = `
+    @scene {
+      sphere#ball;
+      torus#ring;
+      cube.block * 3;
+    }
+    #ball { translate: 0 1 0; color: #ff5a36; material: glass(1.5, frosted 0.3); animation: float 2s ease-in-out infinite alternate; }
+    #ring { translate: 0 1 0; color: #58a6ff; material: metal(0.15); animation: spin 4s linear infinite; }
+    .block { color: #3fb950; scale: 0.35; translate: calc((sibling-index() - 2) * 1.2) 0.2 1.4; animation: hop 1.2s ease-in-out infinite alternate; animation-delay: calc(sibling-index() * 0.2s); }
+    @keyframes float { from { translate: 0 1 0; } to { translate: 0 1.5 0; } }
+    @keyframes spin { from { rotate-y: 0deg; rotate-x: 60deg; } to { rotate-y: 360deg; rotate-x: 60deg; } }
+    @keyframes hop { from { scale: 0.35; } to { scale: 0.5; } }
+  `;
+  const canvas = document.getElementById("c"); canvas.width = innerWidth; canvas.height = innerHeight;
+  try { window.scene = mount(canvas, source, { adaptDpr: false, controls: false }); } catch (e) { console.error("GSS: " + e.message); }
+  window.joyboyReady = true;
+</script>
+</body>
+</html>

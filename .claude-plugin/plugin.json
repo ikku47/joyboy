@@ -1,0 +1,10 @@
+{
+  "name": "joyboy",
+  "version": "1.0.0",
+  "description": "Make any kind of video entirely in code: promos, teasers, explainers, app demos, data stories, short films, with generated music, sound effects and narration.",
+  "author": { "name": "ikku47" },
+  "homepage": "https://github.com/ikku47/joyboy",
+  "repository": "https://github.com/ikku47/joyboy",
+  "license": "MIT",
+  "keywords": ["video", "motion-graphics", "skill", "ffmpeg", "tts", "3d"]
+}
