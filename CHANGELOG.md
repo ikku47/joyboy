@@ -2,6 +2,12 @@
 
 All notable changes to joyboy are listed here, newest first.
 
+## Unreleased
+
+### Changed
+
+- Added the skills.sh listing badge, discovery keywords and an explicit compatibility matrix.
+
 ## 1.1.0 - 2026-11-13
 
 ### Added

@@ -1,4 +1,8 @@
-# joyboy
+# JoyBoy — AI Video Production Skill
+
+[![skills.sh](https://skills.sh/b/ikku47/joyboy)](https://skills.sh/ikku47/joyboy)
+[![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-111827)](https://agentskills.io)
+[![MIT licence](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
 
 **Ask your AI coding agent for a video. Get a finished MP4.**
 
@@ -90,6 +94,17 @@ npx skills add ikku47/joyboy
 What changed in each version is in the [changelog](CHANGELOG.md).
 
 **By hand:** copy the `skills/joyboy` folder into your tool's skills folder (for Claude Code, `~/.claude/skills/joyboy`).
+
+## Compatibility
+
+| Agent | Install path | Status |
+|---|---|---|
+| Claude Code | Native plugin or `npx skills add` | Tested on macOS (Apple Silicon) |
+| Codex | `npx skills add` or `install.sh --codex` | Install flow tested on macOS (Apple Silicon) |
+| Claude desktop and web | Upload the `.skill` release bundle | Packaged; limited real-world testing |
+| Other Agent Skills-compatible agents | `npx skills add` or manual copy | Expected to work; limited testing |
+
+The skill follows the open Agent Skills folder format. Rendering itself has been tested on macOS with Apple Silicon; Linux and Windows remain untested.
 
 ## Use
 

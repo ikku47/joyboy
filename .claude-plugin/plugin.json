@@ -3,8 +3,9 @@
   "version": "1.1.0",
   "description": "Make any kind of video entirely in code: promos, teasers, explainers, app demos, data stories, short films, with generated music, sound effects and narration.",
   "author": { "name": "ikku47" },
+  "icon": "./.claude-plugin/icon.png",
   "homepage": "https://github.com/ikku47/joyboy",
   "repository": "https://github.com/ikku47/joyboy",
   "license": "MIT",
-  "keywords": ["video", "motion-graphics", "skill", "ffmpeg", "tts", "3d"]
+  "keywords": ["ai-video", "video-production", "motion-graphics", "generative-video", "text-to-video", "ffmpeg", "tts", "3d", "agent-skill"]
 }

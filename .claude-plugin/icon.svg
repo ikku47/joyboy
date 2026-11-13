@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">JoyBoy</title>
+  <desc id="desc">A blue left angle bracket, yellow play icon, and mint right angle bracket.</desc>
+  <path fill="#2025FF" d="M354 284 136 512l218 228V610l-94-98 94-98V284Z"/>
+  <path fill="#F2DF00" d="m414 322 278 190-278 190V322Z"/>
+  <path fill="#B8EACE" d="m670 284 218 228-218 228V610l94-98-94-98V284Z"/>
+</svg>
