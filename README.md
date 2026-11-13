@@ -87,6 +87,8 @@ npx skills add ikku47/joyboy
 
 **Claude desktop and web apps:** download `joyboy.skill` from the [Releases](https://github.com/ikku47/joyboy/releases) page, open it in Claude and choose Save skill.
 
+What changed in each version is in the [changelog](CHANGELOG.md).
+
 **By hand:** copy the `skills/joyboy` folder into your tool's skills folder (for Claude Code, `~/.claude/skills/joyboy`).
 
 ## Use
