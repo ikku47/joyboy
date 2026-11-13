@@ -33,7 +33,9 @@ if [ -n "$HERE" ] && [ -f "$HERE/skills/joyboy/SKILL.md" ]; then
 else
   TMP="$(mktemp -d)"
   echo "downloading joyboy..."
-  if command -v git >/dev/null; then git clone --depth 1 --quiet "$REPO" "$TMP/joyboy"
+  if command -v git >/dev/null; then
+    # fetch only the skill folder, not the example videos; fall back to a plain clone on older git
+    (git clone --depth 1 --filter=blob:none --sparse --quiet "$REPO" "$TMP/joyboy" 2>/dev/null && git -C "$TMP/joyboy" sparse-checkout set skills >/dev/null 2>&1) || { rm -rf "$TMP/joyboy"; git clone --depth 1 --quiet "$REPO" "$TMP/joyboy"; }
   else curl -fsSL "$REPO/archive/refs/heads/main.tar.gz" | tar -xz -C "$TMP" && mv "$TMP"/joyboy-* "$TMP/joyboy"; fi
   SRC="$TMP/joyboy/skills/joyboy"
 fi

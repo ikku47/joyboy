@@ -21,6 +21,19 @@ Each preview below is a silent clip. Click it to open the full version with soun
 
 All content in the examples is sample content.
 
+## 24 kinds of video, one brand
+
+The same skill, given one brand kit, made each of these in a single pass: a product demo, a story, an explainer, a teaser, a data story, a website tour, an app showcase, an ad, an invitation and more. Click a picture to watch it with sound. Each is 15 to 30 seconds.
+
+| | | | | | |
+|:-:|:-:|:-:|:-:|:-:|:-:|
+| <a href="examples/kinds/announcement.mp4"><img src="examples/kinds/posters/announcement.jpg" width="130" alt="Announcement"></a><br><sub>Announcement</sub> | <a href="examples/kinds/app-showcase.mp4"><img src="examples/kinds/posters/app-showcase.jpg" width="130" alt="App showcase"></a><br><sub>App showcase</sub> | <a href="examples/kinds/brand-introduction.mp4"><img src="examples/kinds/posters/brand-introduction.jpg" width="130" alt="Brand introduction"></a><br><sub>Brand introduction</sub> | <a href="examples/kinds/community.mp4"><img src="examples/kinds/posters/community.jpg" width="130" alt="Community"></a><br><sub>Community</sub> | <a href="examples/kinds/comparison.mp4"><img src="examples/kinds/posters/comparison.jpg" width="130" alt="Comparison"></a><br><sub>Comparison</sub> | <a href="examples/kinds/customer-story.mp4"><img src="examples/kinds/posters/customer-story.jpg" width="130" alt="Customer story"></a><br><sub>Customer story</sub> |
+| <a href="examples/kinds/data-story.mp4"><img src="examples/kinds/posters/data-story.jpg" width="130" alt="Data story"></a><br><sub>Data story</sub> | <a href="examples/kinds/educational-short.mp4"><img src="examples/kinds/posters/educational-short.jpg" width="130" alt="Educational short"></a><br><sub>Educational short</sub> | <a href="examples/kinds/event-invitation.mp4"><img src="examples/kinds/posters/event-invitation.jpg" width="130" alt="Event invitation"></a><br><sub>Event invitation</sub> | <a href="examples/kinds/explainer.mp4"><img src="examples/kinds/posters/explainer.jpg" width="130" alt="Explainer"></a><br><sub>Explainer</sub> | <a href="examples/kinds/feature-spotlight.mp4"><img src="examples/kinds/posters/feature-spotlight.jpg" width="130" alt="Feature spotlight"></a><br><sub>Feature spotlight</sub> | <a href="examples/kinds/kinetic-type.mp4"><img src="examples/kinds/posters/kinetic-type.jpg" width="130" alt="Kinetic type"></a><br><sub>Kinetic type</sub> |
+| <a href="examples/kinds/launch-teaser.mp4"><img src="examples/kinds/posters/launch-teaser.jpg" width="130" alt="Launch teaser"></a><br><sub>Launch teaser</sub> | <a href="examples/kinds/offer-spotlight.mp4"><img src="examples/kinds/posters/offer-spotlight.jpg" width="130" alt="Offer spotlight"></a><br><sub>Offer spotlight</sub> | <a href="examples/kinds/onboarding.mp4"><img src="examples/kinds/posters/onboarding.jpg" width="130" alt="Onboarding"></a><br><sub>Onboarding</sub> | <a href="examples/kinds/portfolio.mp4"><img src="examples/kinds/posters/portfolio.jpg" width="130" alt="Portfolio"></a><br><sub>Portfolio</sub> | <a href="examples/kinds/product-demo.mp4"><img src="examples/kinds/posters/product-demo.jpg" width="130" alt="Product demo"></a><br><sub>Product demo</sub> | <a href="examples/kinds/recruitment.mp4"><img src="examples/kinds/posters/recruitment.jpg" width="130" alt="Recruitment"></a><br><sub>Recruitment</sub> |
+| <a href="examples/kinds/service-explainer.mp4"><img src="examples/kinds/posters/service-explainer.jpg" width="130" alt="Service explainer"></a><br><sub>Service explainer</sub> | <a href="examples/kinds/social-ad.mp4"><img src="examples/kinds/posters/social-ad.jpg" width="130" alt="Social ad"></a><br><sub>Social ad</sub> | <a href="examples/kinds/storytelling.mp4"><img src="examples/kinds/posters/storytelling.jpg" width="130" alt="Storytelling"></a><br><sub>Storytelling</sub> | <a href="examples/kinds/tutorial.mp4"><img src="examples/kinds/posters/tutorial.jpg" width="130" alt="Tutorial"></a><br><sub>Tutorial</sub> | <a href="examples/kinds/visual-mood-film.mp4"><img src="examples/kinds/posters/visual-mood-film.jpg" width="130" alt="Visual mood film"></a><br><sub>Visual mood film</sub> | <a href="examples/kinds/website-tour.mp4"><img src="examples/kinds/posters/website-tour.jpg" width="130" alt="Website tour"></a><br><sub>Website tour</sub> |
+
+These were made as tests for a studio brand called Digiboy. The offers, events, customers and numbers in them are invented examples and are marked on screen; the app screens are sample screens.
+
 ## How it works
 
 You describe the video in plain words. The agent asks a few simple questions, then writes a short script of scenes like this and renders it on your computer:
@@ -141,7 +154,7 @@ The skill downloads these into your workspace when they are first needed; none a
 
 ```
 skills/joyboy/        the skill: SKILL.md, scripts, references
-examples/             example videos, previews and the showreel's script
+examples/             the showreel, its chapters and script, and 24 kinds of video in examples/kinds
 .claude-plugin/       plugin and marketplace files for Claude Code
 install.sh            installer for Claude Code, Codex and other agents
 ```
