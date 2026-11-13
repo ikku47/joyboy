@@ -16,6 +16,7 @@ Every frame is computed by a Python `frame(f)` function, the audio is synthesize
 - `scripts/gss_template.html` - 3D scenes written in GSS.
 - `scripts/icon.mjs`, `scripts/icon_anim_template.html` - icon search and rendering (react-icons), animated Lucide icons.
 - `scripts/avatar.mjs` - illustrated people from DiceBear, still or talking.
+- `scripts/sitekit.py`, `scripts/site_save.mjs` - download a real public website and animate its own elements (tours, explainers, walk-throughs).
 - `scripts/world.py`, `scripts/world.js`, `scripts/world_still.mjs` - story scenes in a procedural low-poly 3D world with people, weather, time of day and camera shots.
 - `scripts/ambience.py` - background sound synthesized in code (fire, wind, rain, thunder, waves, stream, crickets, traffic).
 - `scripts/joyboy.py` - picture toolkit (import as `jb`, call `jb.init(w, h, fps)` first).
@@ -256,6 +257,17 @@ Use the best voice available, in this order. `quick.py` does this automatically 
 - ElevenLabs handles the language from the text itself.
 - On-screen text in scripts that need shaping (Arabic, Hindi, Malayalam and other Indic scripts) does not render correctly through the built-in text drawing on this setup. For those, put the text in a `web` scene, where the browser shapes it properly, with a font that covers the script. World shots already do this for their captions and titles (see "Worlds").
 
+**Emotional voices: Supertonic (optional).** Piper reads clearly but flatly. When the piece needs feeling in the voice (a story, a dialogue, characters in a world, a heartfelt message, comedy), use Supertonic for those voices. It runs on the user's machine, is fast, and has ten voices: `F1` to `F5` and `M1` to `M5`.
+
+- **Choose it by voice name.** Give a character one of its voices, `film.person("meera", ..., voice="F2")`, and that character speaks with Supertonic while others can stay on Piper. For narration, `Film(..., tts="supertonic", voice_name="M1")`.
+- **Mark the feeling in the line** with expression tags: `<laugh>`, `<sigh>`, `<breath>`. Put a tag where the sound should happen: `"Every evening. <laugh> Somebody had to keep your seat warm."` Use them sparingly, at most one in a line and not on every line, and only where a person would really laugh, sigh or catch their breath.
+- **Captions stay clean.** Tags are removed from captions by themselves, and any other engine skips them, so a tagged line is safe whichever voice ends up speaking it.
+- **Give each character a different voice**, and keep one voice per character for the whole film. Try two or three voices on one line and keep the one that suits the character's age and mood.
+- **Install it once, only when a video needs it:** `~/joyboy/.venv/bin/python -m pip install supertonic`. Its model (about 400 MB) downloads on first use into `~/joyboy/voices/supertonic` and is reused. `SYSTEM.md` shows whether it is ready. Tell the user in one line when it is installed.
+- **Languages:** English, Hindi, Arabic and 28 others (not Malayalam and not most other Indian languages). For a language it lacks, the line falls back to Piper by itself; say so, because the feeling will be flatter.
+- **Licence:** the Supertonic model is under the OpenRAIL-M licence, which sets conditions on use. Mention it once when a user's video is for commercial use, and never copy the model into a project or a repository.
+- `Film(tts="piper" | "elevenlabs" | "say" | "supertonic")` puts one engine first for the whole film; without it the order above applies, with Supertonic used only for its own voice names.
+
 **Set the speaking speed from the script.** Narration speed is a setting, not a fixed default: `Film(..., pace=1.0)` for the whole video and `pace=` on any scene to override it. `1.0` is the voice's normal speed; lower is slower, higher is faster. It works with Piper (phoneme length and the pause between sentences), ElevenLabs and the system voice.
 
 | Script | Pace |
@@ -345,6 +357,7 @@ Film options:
 - `look` - the finish on the picture: `cinematic`, `soft`, `clean`, `punchy`, `warm`, `cool`, `vintage`, `none`, or a dict of strengths (see "Look and sound"). Choose it for every video.
 - `music_seed`, `key`, `energy`, `air` - which variation of the generated music, its key, how full it is, and a wind bed; `sfx`, `mute` - level of the automatic sounds and which to leave out.
 - `bloom` - the glow on bright areas (default 0.8, or what the look sets). Use `bloom=0.2` or less for light or cream backgrounds, which otherwise wash out.
+- `tts` - the voice engine to prefer (`"supertonic"` for emotional voices; see "Voice-over").
 - `palette`, `font`, `font_bold`, `bpm`, `voice_name` (a Piper voice name such as `"ryan"`, or an ElevenLabs voice id).
 - `film.music("song.mp3")` uses an existing track instead of generated music.
 
@@ -359,6 +372,26 @@ Working fast:
 - Mix freely: use scenes for most of the video and `custom` for the one or two shots that need something special. Helpers for custom scenes: `film.mark(path)` (logo outline for `jb.dmask` / `jb.trace`), `film.head(img, title, u)` (fitted heading), `film.text_width(text, size, bold)`, `film.block`, `film.ltext`, `film.put_icon` (call `film.icons_ready([names])` once first), `film.card` (rounded panel), `film.bg`.
 
 `references/playbooks.md` lists common kinds of video and which scenes suit them. Use it for speed when the request is ordinary; ignore it when the concept calls for something else.
+
+## Working with someone's website: download it, then use its parts
+
+When the user points at a website that is not part of the project in front of you ("make an explainer of example.com", "tour this page", "animate their pricing section", "show how to sign up on this site") do not rebuild the page by hand and do not settle for one flat screenshot. Download the page once and work with its real elements.
+
+```python
+s = film.site("https://example.com")            # downloads once, cached in ~/joyboy/captures/sites/ ("mobile" for the phone layout)
+s.show()                                        # lists every element: id, kind, position, words
+s.overview("work/site.jpg")                     # the page with every element numbered - look at it before choosing
+s.shot(dur=3, text="The home page")             # the top of the page
+s.shot(focus="Pricing", label="Three plans", voice="Pick the plan that fits.")
+s.shot(focus=12, lift=True, click=True, zoom=1.3)
+s.shot(scroll=(0.2, 0.7), dur=4)                # a plain scroll
+```
+
+- **What gets saved:** the whole page as a sharp image, the page itself (`page.mhtml`), and `elements.json` with each heading, text, button, link, image, card, section and input: its words, selector and position. `s.meta` also has the page's title, colours and fonts; use them for the intro, outro and labels so the video matches the site.
+- **What a shot can do:** travel to an element (`focus=` its id or words it contains), light it while the rest dims, `label=` it, `lift=` it off the page, `click=` it with a cursor, go closer with `zoom=`, or `scroll=` plainly. Each shot is one scene, takes `voice`, `text`, `tr` and `note` like any scene, and carries on from where the last one ended, so the camera travels over the page. Sounds (move, label, click) are added to match.
+- **Always run `s.show()` and look at the overview first**, then pick elements by id; do not guess what is on the page.
+- **Going further:** the element positions are yours to use in a `custom` scene (cut an element out of `page.png` and fly it, stack cards, build a chart from the page's numbers), and a second page of the site is just another `film.site(url)`. For the page inside a phone or browser window, keep using `film.capture` with `phone()` / `browser()`.
+- **Only public pages.** Nothing is typed, clicked or submitted on the real site; pages behind a login are not for this. It is someone else's site: show it honestly, do not alter its words or pass it off as the user's, and leave people's names and faces on it out of focus shots unless the user asks.
 
 ## Look and sound: choose them for each video
 
@@ -533,7 +566,7 @@ Skin, hair and shirt colours come from the person's DiceBear options, so the 3D 
 - **Falling:** `w.shot("full", say=(appu, "..."), fall=(appu, "end"))` makes that person slip and land on their back with a splash as their line ends (or pass the second of the shot instead of `"end"`). Walking stops, the other person looks down, and the faller stays on the ground in later shots; film them with `fallen:<name>`. A slide whistle, a splash and footsteps are added by themselves. Use `full` for the fall so the whole body is in frame.
 - **Titles in the world:** `w.shot("wide", title="...", sub="...", role="intro")` puts big words over a shot and makes it the film's opening card; `role="outro"` does the same for the closing card. Use these instead of `film.intro` / `film.outro` when the film is in a script the built-in text cannot shape.
 - **Any language on screen:** captions and titles of world shots are drawn by the browser, so Malayalam, Hindi, Tamil, Arabic and other shaped scripts come out correctly with the system's fonts. Write the line in its own script and set `Film(..., lang="ml")` so the voices match.
-- `say=(person, "line")` makes that person speak: lip sync, blinks, nods, a hand gesture, and the listener turns to look. The line is also the caption; pass `text=""` to hide it or `text="..."` to show other words.
+- `say=(person, "line")` makes that person speak: lip sync, blinks, nods, a hand gesture, and the listener turns to look. For feeling in the voices, give the people Supertonic voices and tag the lines (see "Voice-over"). The line is also the caption; pass `text=""` to hide it or `text="..."` to show other words.
 - Shoot it like a film: open with `crane`, `wide` or `orbit`; play dialogue on `two`, cutting to `close` or `over` of whoever speaks or reacts (use `tr="cut"` inside a conversation, a fade only to enter or leave the world); end on `orbit`, `crane` or `prop`. Do not hold one angle for more than two lines.
 - One short sentence per shot. Write lines the way people talk.
 - Check before rendering: `w.still("close:ravi", "work/close.png")` renders one frame in a few seconds. Look at one still per camera you plan to use, in the shape being delivered. A full render captures about ten frames a second.
@@ -546,9 +579,10 @@ Skin, hair and shirt colours come from the person's DiceBear options, so the 3D 
 Background sound is synthesized in code by `ambience.py`, like the music; no recordings are used and nothing is downloaded.
 
 - **Worlds add it by themselves.** A world picks its sounds from its own description: `campfire` gives fire, snow or fog gives a soft muffled wind, rain and storm give rain and wind, a beach gives waves, a street gives traffic hum and horns, a wet village gives frogs, a clear night in the open gives crickets. Walking adds footsteps and a fall adds a slip whistle and a splash. Thunder follows each lightning flash and a whoosh plays as each car passes, timed from the same rules as the picture.
-- The bed runs without a break under all of the world's shots, the fire is louder in close shots than in wide ones, the music drops back while the film is in the world, and the ambience dips a little under voices. Adjust with `w.level` (ambience loudness, default 1.6) and `w.music` (how much music stays, default 0.45; use 0.25 for a quiet, intimate scene, 0.8 when the music should lead).
+- **Ambience is always subtle.** It is a quiet bed that tells the ear where we are; it must never compete with a voice or the music. A world sets it to the same low loudness whatever the place (sea, rain and traffic are no louder than a soft wind), and drops it further while anyone speaks. If the user says a background sound is too loud, lower it; never raise it to make a place feel "more real".
+- The bed runs without a break under all of the world's shots, the fire is a little nearer in close shots than in wide ones, and the music drops back while the film is in the world. Adjust with `w.level` (ambience loudness: 1.0 is the subtle default, 0.5 is barely there, 0 is none, and 2.0 is the most it allows) and `w.music` (how much music stays, default 0.45; use 0.25 for a quiet, intimate scene, 0.8 when the music should lead).
 - **Any other scene** can have ambience through `film.sound_layer(fn)`: `fn(score, duck)` runs when the audio is mixed. Make a sound with `Ambience(seed=...)` - `fire(sec)`, `wind(sec, strength, muffled)`, `rain(sec, heavy)`, `waves(sec)`, `stream(sec)`, `crickets(sec)`, `traffic(sec, busy)`, and the single events `thunder()` and `car_pass(direction, wet)` - and add the stereo array into `score.dry` at the scene's sample position (`scene["start"] / fps * score.sr`), with a short fade in and out. Use it for a photo of a beach, a rainy title card, a map of a city.
-- Keep ambience under the voice and around the level of the music, never above the voice. Read the printed levels after a render.
+- Keep ambience well under the voice and under the music, in every scene. When adding it yourself through `sound_layer`, keep its level low (a gain that leaves it clearly quieter than the music), fade it in and out, and lower it further under any voice. Read the printed levels after a render: the ambience figure should be a small fraction of the music figure.
 - Sounds made of noise (fire, rain, wind, waves, water, thunder) are convincing. A crowd, a market or animals cannot be synthesized well; if a scene depends on those, say so, and use a recording the user supplies through `sound_layer`.
 
 ## Charts: built in, no chart library

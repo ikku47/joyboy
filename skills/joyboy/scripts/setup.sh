@@ -35,7 +35,7 @@ if ! ls "$WS/voices"/*.onnx >/dev/null 2>&1 && "$PY" -c "import piper" 2>/dev/nu
   "$PY" -m piper.download_voices --download-dir "$WS/voices" en_US-lessac-medium || echo "WARNING: voice download failed"
 fi
 
-for f in joyboy.py score.py quick.py maps.py ambience.py world.py model3d.py; do
+for f in joyboy.py score.py quick.py maps.py ambience.py world.py model3d.py sitekit.py; do
   if [ ! -f "$WS/lib/$f" ] || [ "$SKILL/$f" -nt "$WS/lib/$f" ]; then cp "$SKILL/$f" "$WS/lib/$f"; fi
 done
 
@@ -57,7 +57,7 @@ if [ -n "$INSTALLER" ]; then
       echo "TIP: bun is not installed. With bun this step is several times faster and reuses packages already downloaded for other projects. See SYSTEM.md."
     fi
   fi
-  for f in web_capture.mjs web_template.html icon.mjs avatar.mjs world.js world_still.mjs icon_anim_template.html gss_template.html page_capture.mjs; do
+  for f in web_capture.mjs web_template.html icon.mjs avatar.mjs world.js world_still.mjs icon_anim_template.html gss_template.html page_capture.mjs site_save.mjs; do
     if [ ! -f "$WS/web/$f" ] || [ "$SKILL/$f" -nt "$WS/web/$f" ]; then cp "$SKILL/$f" "$WS/web/$f"; fi
   done
 fi

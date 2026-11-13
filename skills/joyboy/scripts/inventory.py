@@ -20,6 +20,9 @@ try:
 except Exception: piper = None
 voices = sorted(os.path.basename(v)[:-5] for v in glob.glob(os.path.join(ws, "voices", "*.onnx")))
 eleven = bool(os.environ.get("ELEVENLABS_API_KEY")); say = bool(shutil.which("say"))
+try: supertonic = version("supertonic")
+except Exception: supertonic = None
+st_model = os.path.isdir(os.path.join(ws, "voices", "supertonic", "onnx"))
 voice = "ElevenLabs" if eleven else "Piper" if piper and voices else "system voice (say)" if say else "none"
 node = cmd("node", "--version") or None
 bun = cmd("bun", "--version") or (cmd(os.path.expanduser("~/.bun/bin/bun"), "--version") if os.path.exists(os.path.expanduser("~/.bun/bin/bun")) else "") or None
@@ -60,6 +63,7 @@ L += ["", "## Voice-over", "",
       f"- {box(piper)} Piper TTS" + (f" {piper}" if piper else " - not installed"),
       f"- {box(voices)} Piper voices in `voices/`: " + (", ".join(voices) if voices else "none"),
       f"- {box(say)} System voice (`say`), last resort",
+      f"- {box(supertonic)} Supertonic (emotional voices F1-F5, M1-M5; tags <laugh> <sigh> <breath>)" + (f" {supertonic}" + ("" if st_model else "; its model downloads on first use") if supertonic else " - not installed (once: `.venv/bin/python -m pip install supertonic`, only when a video needs emotional voices)"),
       "", "## Package installer", "",
       f"- {box(bun)} bun" + (f" {bun}: used for installs; packages already downloaded on this machine are reused from its cache" if bun else " - not installed. npm is used instead. Suggest bun to the user once (see SKILL.md): installs become several times faster and reuse packages already on the machine."),
       f"- {box(npm_)} npm" + (f" {npm_}" if npm_ else " - not installed") + " (fallback)",

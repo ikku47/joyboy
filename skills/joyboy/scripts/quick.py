@@ -49,6 +49,13 @@ LOOKS = {
 }
 MOOD_LOOK = {"cinematic": "cinematic", "calm": "soft", "upbeat": "punchy", "tech": "clean", "hype": "punchy", "none": "clean"}
 
+EMOTION = re.compile(r"\s*<(laugh|sigh|breath)>\s*")     # expression tags a line may carry for emotional voices
+def untag(text):
+    """A line without its expression tags, for captions and for voices that cannot act them."""
+    return re.sub(r"\s+([.,!?])", r"\1", EMOTION.sub(" ", str(text))).strip()
+SUPERTONIC_LANGS = set("en ko ja ar bg cs da de el es et fi fr hi hr hu id it lt lv nl pl pt ro ru sk sl sv tr uk vi".split())
+_SUPERTONIC = None
+
 def col(c):
     """'#rrggbb' or (b, g, r) -> float32 BGR."""
     if isinstance(c, str): c = c.lstrip("#"); return np.float32([int(c[4:6], 16), int(c[2:4], 16), int(c[0:2], 16)])
@@ -62,14 +69,14 @@ def _default_fonts():
     raise RuntimeError("no default font found; pass font=(path, weight, index) and font_bold=...")
 
 class Film:
-    def __init__(self, name, size="portrait", fps=30, mood="cinematic", palette=None, font=None, font_bold=None, bpm=None, voice=None, voice_name=None, lang="en", pace=1.0, bloom=None, out=None, loose=False, look=None, music_seed=None, key=None, energy=1.0, sfx=1.0, mute=(), air=False):
+    def __init__(self, name, size="portrait", fps=30, mood="cinematic", palette=None, font=None, font_bold=None, bpm=None, voice=None, voice_name=None, tts=None, lang="en", pace=1.0, bloom=None, out=None, loose=False, look=None, music_seed=None, key=None, energy=1.0, sfx=1.0, mute=(), air=False):
         self.name, self.mood, self.fps = name, mood, fps; self.m = MOODS[mood]; self.draft = bool(os.environ.get("JOYBOY_DRAFT"))
         w, h = SIZES[size] if isinstance(size, str) else size
         if self.draft: w, h = w // 4 * 2, h // 4 * 2
         jb.init(w, h, fps); self.W, self.H, self.U = w, h, min(w, h) / 1080
         self.pal = [col(c) for c in (palette or ["#0b0b10", "#2f8ff5", "#e5261f", "#ff8a1f", "#7b3fe4"])]
         fb, fr = _default_fonts(); self.fb, self.fr = font_bold or font or fb, font or fr
-        self.beat = max(1, round(fps * 60 / (bpm or self.m["bpm"]))); self.voice_name = voice_name or voice
+        self.beat = max(1, round(fps * 60 / (bpm or self.m["bpm"]))); self.voice_name = voice_name or voice; self.tts = tts
         # look: a name from LOOKS, or a dict of strengths (optionally with "base": a look name to start from). None = the look that suits the mood.
         base = dict(LOOKS[(look.get("base") if isinstance(look, dict) else look) or MOOD_LOOK[mood]]); base.update({k_: v_ for k_, v_ in (look.items() if isinstance(look, dict) else ()) if k_ != "base"})
         self.fin = base; self.bloom = bloom if bloom is not None else (base["bloom"] if base["bloom"] is not None else 0.8)
@@ -93,6 +100,9 @@ class Film:
         """Narration audio for a scene. `text` is the words to speak, or a path to an audio file already
         made (for example by an ElevenLabs MCP tool). Engines, in order: ElevenLabs (if ELEVENLABS_API_KEY
         is set), Piper (if installed with a voice in <workspace>/voices), the system voice (`say`).
+        Supertonic, the emotional voice, is used first when the voice is one of its names (F1-F5, M1-M5) or
+        Film(tts="supertonic"); it acts the tags <laugh>, <sigh> and <breath>, which every other engine skips.
+        Film(tts="piper" | "elevenlabs" | "say" | "supertonic") puts that engine first.
         Cached in work/voice. Returns (wav path, seconds) or None."""
         import glob, json, urllib.request
         d = os.path.join(self.work, "voice"); os.makedirs(d, exist_ok=True); home = os.environ.get("JOYBOY_HOME", os.path.expanduser("~/joyboy"))
@@ -102,10 +112,19 @@ class Film:
             p = os.path.join(d, "file-" + hashlib.md5(os.path.abspath(text).encode()).hexdigest()[:12] + ".wav")
             if not os.path.exists(p): conv(text, p)
             return p, dur(p)
+        plain = untag(text); st_voice = self.voice_name if self.voice_name and re.fullmatch(r"[FM][1-5]", str(self.voice_name)) else None
+        def supertonic(out):
+            global _SUPERTONIC
+            if _SUPERTONIC is None:
+                try: from supertonic import TTS
+                except ImportError: raise RuntimeError("not installed; once: ~/joyboy/.venv/bin/python -m pip install supertonic")
+                _SUPERTONIC = TTS(model="supertonic-3", model_dir=os.path.join(home, "voices", "supertonic"), auto_download=True)
+            wav, _ = _SUPERTONIC.synthesize(text, voice_style=_SUPERTONIC.get_voice_style(voice_name=st_voice or "F1"), lang=self.lang, speed=1.05 * float(pace))
+            _SUPERTONIC.save_audio(wav, out + ".s.wav"); conv(out + ".s.wav", out); os.remove(out + ".s.wav")
         key = os.environ.get("ELEVENLABS_API_KEY"); models = sorted(glob.glob(os.path.join(home, "voices", "*.onnx")))
         def eleven(out):
             vid = self.voice_name if self.voice_name and re.fullmatch(r"[A-Za-z0-9]{20}", self.voice_name) else os.environ.get("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")
-            rq = urllib.request.Request(f"https://api.elevenlabs.io/v1/text-to-speech/{vid}", data=json.dumps({"text": text, "model_id": "eleven_multilingual_v2", "voice_settings": {"speed": float(min(max(pace, 0.7), 1.2))}}).encode(),
+            rq = urllib.request.Request(f"https://api.elevenlabs.io/v1/text-to-speech/{vid}", data=json.dumps({"text": plain, "model_id": "eleven_multilingual_v2", "voice_settings": {"speed": float(min(max(pace, 0.7), 1.2))}}).encode(),
                                         headers={"xi-api-key": key, "Content-Type": "application/json", "accept": "audio/mpeg"})
             open(out + ".mp3", "wb").write(urllib.request.urlopen(rq, timeout=120).read()); conv(out + ".mp3", out); os.remove(out + ".mp3")
         def piper(out):
@@ -117,14 +136,16 @@ class Film:
                 print(f"downloading Piper voice {pick} (one time)..."); subprocess.run([sys.executable, "-m", "piper.download_voices", "--download-dir", os.path.join(home, "voices"), pick], check=True, capture_output=True)
                 mine = [os.path.join(home, "voices", pick + ".onnx")]
             m = next((x for x in mine if self.voice_name and self.voice_name in os.path.basename(x)), None) or next((x for x in mine if "lessac" in x), mine[0])
-            subprocess.run([sys.executable, "-m", "piper", "-m", m, "-f", out + ".p.wav", "--length-scale", f"{1 / pace:.3f}", "--sentence-silence", f"{0.28 / pace:.2f}"], input=text.encode(), check=True, capture_output=True); conv(out + ".p.wav", out); os.remove(out + ".p.wav")
+            subprocess.run([sys.executable, "-m", "piper", "-m", m, "-f", out + ".p.wav", "--length-scale", f"{1 / pace:.3f}", "--sentence-silence", f"{0.28 / pace:.2f}"], input=plain.encode(), check=True, capture_output=True); conv(out + ".p.wav", out); os.remove(out + ".p.wav")
         def system(out):
             v = self.voice_name if self.voice_name and self.lang == "en" else None
             if not v and self.lang != "en":   # pick a system voice that speaks the language
                 v = next((l.split()[0] for l in subprocess.run(["say", "-v", "?"], capture_output=True, text=True).stdout.splitlines() if re.search(r"\b%s[_-]" % self.lang, l)), None)
                 if not v: raise RuntimeError(f"no system voice for language '{self.lang}'")
-            subprocess.run(["say"] + (["-v", v] if v else []) + ["-r", str(int(175 * pace)), "-o", out + ".aiff", text], check=True); conv(out + ".aiff", out); os.remove(out + ".aiff")
+            subprocess.run(["say"] + (["-v", v] if v else []) + ["-r", str(int(175 * pace)), "-o", out + ".aiff", plain], check=True); conv(out + ".aiff", out); os.remove(out + ".aiff")
         engines = ([("elevenlabs", eleven)] if key else []) + ([("piper", piper)] if models or self.lang != "en" else []) + ([("say", system)] if shutil.which("say") else [])
+        if (st_voice or self.tts == "supertonic") and self.tts in (None, "supertonic") and self.lang in SUPERTONIC_LANGS: engines = [("supertonic", supertonic)] + engines
+        if self.tts: engines.sort(key=lambda e: e[0] != self.tts)      # the chosen engine first, the rest as fallbacks
         for name, fn in engines:
             p = os.path.join(d, name + "-" + hashlib.md5((text + str(self.voice_name) + self.lang + f"{pace:.2f}").encode()).hexdigest()[:12] + ".wav")
             if os.path.exists(p): return p, dur(p)
@@ -424,6 +445,12 @@ class Film:
         See model3d.py and "3D models" in SKILL.md."""
         from model3d import Model
         return Model(self, glb, **k)
+    def site(self, url, device="desktop"):
+        """Download a real public website once and work with its parts: move to an element, light it, lift it, label it,
+        click it. Returns a Site; add shots with s.shot(focus="words on the page", label=..., click=True).
+        See sitekit.py and "Working with someone's website" in SKILL.md."""
+        from sitekit import Site
+        return Site(self, url, device)
     def world(self, place="forest", time="day", weather="clear", seed=1, props=(), people=(), extras=None):
         """A procedural low-poly 3D world for story scenes: a place, a time of day, weather, props and people (from person()).
         Returns a World; add camera shots with w.shot(cam, say=(person, "line")). See world.py and "Worlds" in SKILL.md."""
@@ -452,7 +479,7 @@ class Film:
             if prop:
                 ww, wh = (int(W * 0.44) // 2 * 2, int(H * 0.52) // 2 * 2) if land else (int(W * 0.90) // 2 * 2, int(H * 0.36) // 2 * 2); sh = jb.art(prop); kk = max(ww / sh.shape[1], wh / sh.shape[0])
                 page = cv2.resize(sh, (max(int(sh.shape[1] * kk), ww), max(int(sh.shape[0] * kk), wh)), interpolation=cv2.INTER_AREA).astype(np.float32); pm = rr(ww, wh, int(30 * U)); px0, py0 = (int(W * 0.50), int(H * 0.10)) if land else ((W - ww) // 2, int(H * 0.065))
-            tw = W * (0.42 if land else 0.84); lines = self.wrap(line, 50, True, tw) if caption else []
+            tw = W * (0.42 if land else 0.84); lines = self.wrap(untag(line), 50, True, tw) if caption else []
             def draw(u, n, f):
                 img = self.bg(bg, u, n, f); o = self._io(u, n, 8, 8); t = u - v0; on = 0 <= t < len(env); lv = float(env[t]) if on else 0.0
                 mouth = m0 if lv < 0.14 else m1 if lv < 0.6 else m2; eyes = e_blink if (u + 37) % 88 < 4 else (e_open if on else e_idle)

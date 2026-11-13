@@ -111,6 +111,7 @@ The first video sets up a workspace in `~/joyboy` and installs what it needs onc
 | Data | Counters, bar and column charts, line charts, donuts, heat maps |
 | Places | Real street maps from OpenStreetMap data, with pins and routes |
 | Screens | Real web pages captured and shown in a phone frame or a browser window |
+| Website tours | Any public website downloaded once, then its own elements lit, labelled, lifted and clicked for tours and explainers |
 | Icons | Library icons (about 30 sets), still or animated |
 | Web animation | GSAP scenes captured frame by frame |
 | 3D | Glass and metal shapes (GSS), real model files (67.js), and procedural worlds with people (three.js) |

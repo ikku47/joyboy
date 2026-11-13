@@ -12,6 +12,7 @@ Movement: w.shot(..., walk=True) and w.shot(..., fall=(person, seconds)).
 The same seed always builds the same world, so every shot matches. Ambience (ambience.py) is added by itself."""
 import os, sys, json, base64, hashlib, subprocess, math
 import numpy as np
+from quick import untag
 HOME = os.environ.get("JOYBOY_HOME", os.path.expanduser("~/joyboy")); KIT = os.path.join(HOME, "web")
 HAIR = {"bun": "bun", "shortCurly": "curly", "curly": "curly", "fro": "curly", "froBand": "curly", "dreads": "curly", "bob": "long", "longButNotTooLong": "long", "straight01": "long", "straight02": "long", "straightAndStrand": "long", "curvy": "long", "miaWallace": "long", "bigHair": "long", "hat": "beanie", "winterHat1": "beanie", "winterHat02": "beanie", "winterHat03": "beanie", "winterHat04": "beanie"}
 PAGE = """<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;width:100vw;height:100vh;overflow:hidden;background:#000}canvas{display:block;width:100vw;height:100vh}
@@ -32,7 +33,7 @@ try { const w = await build(spec, c); document.fonts.ready.then(() => { over(0);
 class World:
     def __init__(self, film, place="forest", time="day", weather="clear", seed=1, props=(), people=(), extras=None):
         """people = [(person from film.person(), "sit" | "stand", {extra: scarf, hat, pants, umbrella ...}), ...]"""
-        self.film, self.t0 = film, 0.0; self.shots = []; self.events = []; self.dist = 0.0; self.down = set(); self.level = 1.6; self.music = 0.45;   # ambience loudness, and how much of the music stays under the world's shots
+        self.film, self.t0 = film, 0.0; self.shots = []; self.events = []; self.dist = 0.0; self.down = set(); self.level = 1.0; self.music = 0.45;   # ambience loudness, and how much of the music stays under the world's shots
         film.sound_layer(self._ambience); self.base = dict(place=place, time=time, weather=weather, seed=seed, props=list(props), fps=film.fps, people=[])
         if extras is not None: self.base["extras"] = extras
         for it in people:
@@ -72,7 +73,7 @@ class World:
             person, line = say; old = film.voice_name; film.voice_name = person["voice"] or old; pace = k.get("pace") or film.pace
             try: vf = film._say(line, float(pace)); env = film._envelope(vf[0]) if vf else np.zeros(1)
             finally: film.voice_name = old
-            dur = max(dur, (vf[1] if vf else 0) + at + 0.5); speak = dict(id=person["name"], at=at, env=[round(float(v), 2) for v in env]); text = line if text is None else text
+            dur = max(dur, (vf[1] if vf else 0) + at + 0.5); speak = dict(id=person["name"], at=at, env=[round(float(v), 2) for v in env]); text = untag(line) if text is None else text      # captions never show expression tags
         if fall and fall[1] == "end": fall = (fall[0], round(at + (vf[1] if say and vf else 1.0) - 0.1, 2)); dur = max(dur, fall[1] + 2.2)     # fall as the line ends, then hold on the result
         n = max(film.beat * 2, round(dur * fps / film.beat) * film.beat); dur = n / fps
         v = 0.0 if (not walk or self.down) else (1.1 if walk is True else float(walk)); moved = dur
@@ -104,11 +105,15 @@ class World:
         near = np.full(n, 0.7)
         for sc, cam, _ in self.shots: near[int((sc["start"] - f0) / fps * sr):int((sc["start"] + sc["n"] - f0) / fps * sr)] = self.NEAR.get(cam, 0.8)
         k = int(0.3 * sr); near = np.convolve(np.pad(near, k, mode="edge"), np.ones(k) / k, "same")[k:-k]                       # no jump in loudness on a cut
-        edge = np.clip(np.arange(n) / (0.8 * sr), 0, 1) * np.clip((n - np.arange(n)) / (1.2 * sr), 0, 1); dk = 1 - (1 - duck[i0:i0 + n, 0]) * 0.45
+        edge = np.clip(np.arange(n) / (0.8 * sr), 0, 1) * np.clip((n - np.arange(n)) / (1.2 * sr), 0, 1); dk = 1 - (1 - duck[i0:i0 + n, 0]) * 0.8          # ambience drops well back under a voice
         mg = 1 - (1 - self.music) * edge; s.wet[i0:i0 + n] *= mg[:, None]; s.dry[i0:i0 + n] *= mg[:, None]                    # music steps back while we are in the world
         mus = float(np.sqrt(((s.wet[i0:i0 + n] + s.dry[i0:i0 + n]) ** 2).mean())); amb0 = s.dry[i0:i0 + n].copy()
+        bed = np.zeros((n, 2))
         for name, x, g in A.for_world(b["place"], b["time"], b["weather"], b["props"], n / sr + 0.2):
-            cam_g = near if name == "fire" else 0.6 + 0.4 * near; s.dry[i0:i0 + n] += x[:n] * (cam_g * edge * dk * g * self.level)[:, None]
+            cam_g = near if name == "fire" else 0.6 + 0.4 * near; bed += x[:n] * (cam_g * edge * g)[:, None]
+        r = float(np.sqrt((bed ** 2).mean()))
+        if r > 0: bed *= 0.02 * min(max(self.level, 0.0), 2.0) / r     # ambience is always a quiet bed: the same low loudness whatever the place, far under voices
+        s.dry[i0:i0 + n] += bed * dk[:, None]
         print("ambience: music rms %.3f, ambience rms %.3f" % (mus, float(np.sqrt(((s.dry[i0:i0 + n] - amb0) ** 2).mean()))))
         def at(tw, sig, g):                                                                                                    # place an event given in world time
             for sc, cam, t0 in self.shots:
