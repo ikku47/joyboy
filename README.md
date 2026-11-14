@@ -42,6 +42,74 @@ The same skill, given one brand kit, made each of these in a single pass: a prod
 
 These were made as tests for a studio brand called Digiboy. The offers, events, customers and numbers in them are invented examples and are marked on screen; the app screens are sample screens.
 
+## Eight themes, twelve music genres, twenty-one new scene types
+
+Videos do not all have to be dark and cinematic. `theme=` picks a whole visual system (`flat`, `studio`, `blueprint`, `brutal`, `aurora`, `paper`, `neon`, `retro`), `genre=` picks the music (`lofi`, `house`, `trap`, `synthwave`, `ambient`, `acoustic`, `funk`, `epic`, `phonk`, `afro`, `pop`, `techno`), and new scenes cover the formats that are working on feeds now: `kinetic`, `highlight`, `stages`, `timeline`, `countdown`, `versus`, `product`, `chat`, `satisfying`, `stick`, `anatomy`, `before_after`, `wire`, `cta`, `skit`, `laptop`, `notes`, `review`, `wrapped`, `lyrics`, `changelog`.
+
+```python
+film = Film("launch", size="portrait", mood="hype", theme="flat", genre="trap")
+film.intro("STOP SCROLLING")
+film.kinetic("start building something real", per=0.4, hl=["real"])
+film.stages("5 stages of shipping", ["excited", "confident", "stuck", "panic", "shipped"])
+film.outro("MAKE IT")
+film.render()
+```
+
+![Four themes](examples/themes.jpg)
+
+## 49 styles, 17 themes, 14 looks, 18 genres
+
+`Film(style="risograph")` sets a whole medium at once (print, hand-drawn, screens and instruments, technical drawing, film and light, layouts); the list is in `skills/joyboy/references/styles.md`. Whole-picture looks (`fx=`: riso, halftone, dither, engrave, bands, duotone, thermal, xray, ascii, film, cel, tiltshift, vhs, pixel), nine new themes (chalkboard, whiteboard, dotgrid, circuit, scope, keynote, swiss, kraft, lighttable), a foley kit of sounds by material with sound beds, three new scenes (`write`, `sketch`, `stamp`), mastering to -14 LUFS, and render-time checks for camera angles, readable text and silence.
+
+![49 styles](examples/styles.jpg)
+
+## The workflow: plan first, script last
+
+Every video follows the same gated order, so each one is chosen from evidence, built from the best piece available (or a new piece made for it), matches a reference when one is given, and differs from the last ones:
+
+1. **Setup and read** what exists: tools, catalog, saved assets, recent videos.
+2. **Brief**, one question at a time (and: do you have a reference?).
+3. **Research** what is working now with `ig-viral` and Agent Reach: formulas with evidence.
+4. **Measure the reference** (`refscan.py`): shots, cut times, colours, tempo, then describe every shot.
+5. **Match each beat** against the catalog (`catalog.py find`); no real match means **make it** (`scaffold.py`, Blender assets).
+6. **Variety check** against the last videos (`variety.py`).
+7. **Only now the script**, written with the research and the catalog in hand.
+8. **Draft, check, render**, with an accuracy score against a reference (`refscan.py check`), caption, deliver.
+
+Details and commands: [`skills/joyboy/references/workflow.md`](skills/joyboy/references/workflow.md).
+
+Ten videos made through it, each different in kind, theme, music genre, shape and scene mix (the plans are in `~/joyboy/projects/showcase-*/plan.md`):
+
+![Ten different videos](examples/showcase.jpg)
+
+| # | Kind | Theme, genre | Main scenes |
+|---|---|---|---|
+| 01 | Kinetic-type hook | flat, trap | `kinetic` |
+| 02 | Product hero ad | studio, pop | `product`, `review` |
+| 03 | AI skit with a call to action | dark, lofi | `skit`, `laptop`, `cta` |
+| 04 | "5 stages of shipping" | brutal, phonk | `stages` |
+| 05 | One appointment, timestamped | paper, acoustic | `timeline`, `highlight` |
+| 06 | Year-in-review | aurora, house | `wrapped` |
+| 07 | Satisfying loops | neon, ambient | `satisfying` |
+| 08 | Built from one prompt (square) | blueprint, techno | `wire`, `crt`, `changelog`, `cta` |
+| 09 | Lyric video with a VHS look | retro, synthwave | `lyrics`, `fx=vhs` |
+| 10 | Mascot story from Blender assets (wide) | studio, afro | `sprite`, `highlight` |
+
+## What it installs and keeps
+
+- **The Instagram pack.** `install.sh` also installs the `/ig-*` skills (viral research, reels, captions, carousels, stories, comments, replies, DMs, weekly plan, profile and audit, `ig-human`) and links the Agent Reach skill when its command is installed, so research and writing happen beside the video skill.
+- **A scan of your machine.** `setup.sh` writes `~/joyboy/TOOLS.md`: the tools, apps, MCP servers, agent skills and local models it found (Blender, Codex, ffmpeg, local image and music models ...) and which to use for each need. Read-only; no secrets.
+- **An asset library.** Characters, character sheets, sprite sheets and 3D models made in Blender or anywhere else are kept in `~/joyboy/assets/` with the recipe that rebuilds them:
+
+```bash
+python ~/joyboy/lib/blender_asset.py mascot joybot          # a 3D character + character sheet + sprite sheet, headless
+python ~/joyboy/lib/assets.py rebuild joybot-sheet          # recreate it any time
+```
+
+```python
+film.sprite("joybot-sprites", travel=True, text="Day one")   # use it in a video
+```
+
 ## How it works
 
 You describe the video in plain words. The agent asks a few simple questions, then writes a short script of scenes like this and renders it on your computer:
@@ -156,6 +224,10 @@ Without Node and Chrome the rest still works: charts, maps, type, images, phones
 - **3D models** must be supplied as single `.glb` files; the skill shows models, it does not create them.
 - **Map routes** are straight lines between points, not driving directions.
 - **Other agents:** the instructions were written for Claude Code. They name a few Claude tools (a question tool, file sending, subagents) and say what to do when those are missing, but other agents have had little testing.
+
+## Inspiration
+
+The style families, the craft checklist in `references/directing.md` and the shared-style prompt method in `imagegen.py` were inspired by studying [lemomo-ai/lemo-opuscar](https://github.com/lemomo-ai/lemo-opuscar). Nothing was copied: its documents and prompts are CC BY-NC 4.0, so every style, rule and line of code here is written from scratch.
 
 ## Third-party pieces
 

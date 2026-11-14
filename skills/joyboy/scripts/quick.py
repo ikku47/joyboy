@@ -26,6 +26,7 @@ from PIL import Image, ImageDraw
 import joyboy as jb
 from joyboy import eo, ei, eio, clamp, spring
 from score import Score
+import genres, themes, kinds, styles
 
 SIZES = {"portrait": (1080, 1920), "landscape": (1920, 1080), "square": (1080, 1080), "4:5": (1080, 1350)}
 MOODS = {  # bpm, default transition, background colours, grain
@@ -69,32 +70,61 @@ def _default_fonts():
     raise RuntimeError("no default font found; pass font=(path, weight, index) and font_bold=...")
 
 class Film:
-    def __init__(self, name, size="portrait", fps=30, mood="cinematic", palette=None, font=None, font_bold=None, bpm=None, voice=None, voice_name=None, tts=None, lang="en", pace=1.0, bloom=None, out=None, loose=False, look=None, music_seed=None, key=None, energy=1.0, sfx=1.0, mute=(), air=False):
+    def __init__(self, name, size="portrait", fps=30, mood=None, palette=None, font=None, font_bold=None, bpm=None, voice=None, voice_name=None, tts=None, lang="en", pace=1.0, bloom=None, out=None, loose=False, look=None, music_seed=None, key=None, energy=1.0, sfx=1.0, mute=(), air=False, genre=None, theme=None, fx=None, grade=None, mblur=False, exact=False, bed=None, style=None):
+        st = styles.get(style) if style else {}                          # a style sets a whole look and sound; anything passed explicitly wins
+        mood = mood or st.get("mood") or "cinematic"; theme = theme or st.get("theme"); fx = fx if fx is not None else st.get("fx"); grade = grade or st.get("grade"); genre = genre or st.get("genre"); bed = bed or st.get("bed"); look = look if look is not None else st.get("look"); self.style = style
         self.name, self.mood, self.fps = name, mood, fps; self.m = MOODS[mood]; self.draft = bool(os.environ.get("JOYBOY_DRAFT"))
         w, h = SIZES[size] if isinstance(size, str) else size
         if self.draft: w, h = w // 4 * 2, h // 4 * 2
         jb.init(w, h, fps); self.W, self.H, self.U = w, h, min(w, h) / 1080
-        self.pal = [col(c) for c in (palette or ["#0b0b10", "#2f8ff5", "#e5261f", "#ff8a1f", "#7b3fe4"])]
-        fb, fr = _default_fonts(); self.fb, self.fr = font_bold or font or fb, font or fr
+        self.bed = bed
+        if bed:
+            import foley
+            if bed not in foley.BEDS: sys.exit('joyboy: unknown bed %r; choose from %s' % (bed, ', '.join(foley.BEDS)))
+        self.fx = fx; self.grade = grade; self.mblur = bool(mblur); self.exact = bool(exact)   # exact: scene lengths are exactly what is asked (no beat snapping), for matching a reference
+        if grade and not callable(grade) and grade not in kinds.GRADES: sys.exit('joyboy: unknown grade %r; choose from %s' % (grade, ', '.join(kinds.GRADES)))
+        if fx and not callable(fx) and (fx[0] if isinstance(fx, (tuple, list)) else fx) not in kinds.FX: sys.exit('joyboy: unknown fx %r; choose from %s' % (fx, ', '.join(kinds.FX)))
+        self.theme = themes.resolve(theme); th = self.theme or {}; self.cur = 0; self._ink = jb.WHITE
+        self.pal = [col(c) for c in (palette or th.get("pal") or ["#0b0b10", "#2f8ff5", "#e5261f", "#ff8a1f", "#7b3fe4"])]
+        fb, fr = _default_fonts(); self.fb, self.fr = font_bold or font or th.get("font") or fb, font or th.get("font_reg") or fr
+        if look is None and th: look = th["look"]
+        if bloom is None and th: bloom = th["bloom"]
+        self.music_seed = music_seed if music_seed is not None else int(hashlib.md5(name.encode()).hexdigest()[:6], 16)   # each video gets its own music; the same video always gets the same
+        # genre: one of genres.GENRES, "classic" (the original three-arrangement score), or None = a genre that suits the mood, picked by the seed
+        self.genre = None if (mood == "none" or genre == "classic") else (genre or genres.pick_genre(mood, self.music_seed))
+        if self.genre and self.genre not in genres.GENRES: sys.exit("joyboy: unknown genre %r; choose from %s" % (self.genre, ", ".join(genres.GENRES)))
+        if bpm is None and self.genre: bpm = genres.tempo(self.genre, self.music_seed)
         self.beat = max(1, round(fps * 60 / (bpm or self.m["bpm"]))); self.voice_name = voice_name or voice; self.tts = tts
         # look: a name from LOOKS, or a dict of strengths (optionally with "base": a look name to start from). None = the look that suits the mood.
         base = dict(LOOKS[(look.get("base") if isinstance(look, dict) else look) or MOOD_LOOK[mood]]); base.update({k_: v_ for k_, v_ in (look.items() if isinstance(look, dict) else ()) if k_ != "base"})
+        self.look_name = ((look.get('base') if isinstance(look, dict) else look) or MOOD_LOOK[mood]) if not isinstance(look, dict) or look.get('base') else 'custom'
+        self.ffgrain = os.environ.get("JOYBOY_FFGRAIN", "1") != "0"      # grain is added by the encoder, not drawn into every frame: much smaller files, faster
         self.fin = base; self.bloom = bloom if bloom is not None else (base["bloom"] if base["bloom"] is not None else 0.8)
         if base["grain"] is None: base["grain"] = self.m["grain"]
-        self.music_seed = music_seed if music_seed is not None else int(hashlib.md5(name.encode()).hexdigest()[:6], 16)   # each video gets its own music; the same video always gets the same
         self.key, self.energy, self.sfx, self.mute, self.air = key, float(energy), float(sfx), set(mute or ()), air
         self.scenes = []; self.layers = []; self.music_file = None; self.loose = loose; self.lang = (lang or "en").lower()[:2]; self.pace = pace; self.work = os.path.abspath("work"); os.makedirs(self.work, exist_ok=True)
+        if self.bed:
+            import foley
+            self.layers.append(lambda s_, duck_: foley.bed(s_, self.bed, 0, s_.F, 0.05, duck_))   # a quiet room, machine or tape bed under the whole film
         self.out = out or os.path.abspath(os.path.join("work", name + "-draft.mp4") if self.draft else os.path.join("out", name + ".mp4")); os.makedirs(os.path.dirname(self.out), exist_ok=True)   # drafts stay in work/, out/ holds finished videos only
 
     # ---------- plumbing ----------
-    def _add(self, draw, dur, tr=None, voice=None, kind="scene", meta=None, sfx=None, pace=None, note=None, voice_at=0.2):
-        pace = self.pace if pace is None else pace; vf = None
+    def _add(self, draw, dur, tr=None, voice=None, kind="scene", meta=None, sfx=None, pace=None, note=None, voice_at=None, voice_as=None):
+        """voice_as: a voice for this scene only (Supertonic F1-F5, M1-M5, a Piper name ...): one voice per character. exact films keep every scene's length and speak faster to fit."""
+        voice_at = (0.08 if self.exact else 0.2) if voice_at is None else voice_at
+        idx = len(self.scenes); draw0 = draw
+        def draw(u, n, f): self.cur = idx; return draw0(u, n, f)
+        pace = self.pace if pace is None else pace; vf = None; _vn = self.voice_name
+        if voice_as: self.voice_name = voice_as
+        if voice and (pace == "fit" or (self.exact and pace == self.pace)): pace = "fit"
         if voice and pace == "fit":      # keep the scene's length: speak as fast as needed (within natural limits) to fit it
             vf = self._say(voice, 1.0)
-            if vf and vf[1] > dur - 0.6: vf = self._say(voice, min(1.3, max(1.0, round(vf[1] / max(dur - 0.6, 0.5), 2))))
+            mg = 0.12 if self.exact else 0.6
+            if vf and vf[1] > dur - mg: vf = self._say(voice, min(1.5 if self.exact else 1.3, max(1.0, round(vf[1] / max(dur - mg, 0.3), 2))))
         elif voice: vf = self._say(voice, float(pace))
-        if vf: dur = max(dur, vf[1] + 0.3 + voice_at)
-        n = max(self.beat * 2, round(dur * self.fps / self.beat) * self.beat)
+        self.voice_name = _vn
+        if vf and not self.exact: dur = max(dur, vf[1] + 0.3 + voice_at)
+        n = max(2, round(dur * self.fps)) if self.exact else max(self.beat * 2, round(dur * self.fps / self.beat) * self.beat)
         self.scenes.append(dict(draw=draw, n=n, tr=tr or self.m["tr"], voice=vf, kind=kind, meta=meta or {}, sfx=sfx or [], note=note, voice_at=voice_at, say=voice if (voice and not os.path.isfile(str(voice))) else ("(audio file) " + os.path.basename(str(voice)) if voice else ""), pace=pace)); return self
     def _say(self, text, pace=1.0):
         """Narration audio for a scene. `text` is the words to speak, or a path to an audio file already
@@ -175,9 +205,12 @@ class Film:
         return out
     def _len(self, txt, size, bold):
         p, wt, ix = self.fb if bold else self.fr; return jb.font(p, max(8, int(size * self.U)), wt, ix).getlength(txt)
-    def block(self, img, lines, cy, size, bold=True, op=1.0, gap=1.18, color=jb.WHITE, scale=1.0, shadow=0.4, track=0, stagger=0, u=0, maxw=None, maxh=None):
+    ink = property(lambda self: self._ink)    # the text colour: white, or near-black on a light background (set by bg())
+    def block(self, img, lines, cy, size, bold=True, op=1.0, gap=1.18, color=None, scale=1.0, shadow=0.4, track=0, stagger=0, u=0, maxw=None, maxh=None):
         """Centred multi-line text block around cy that always fits its container: one size factor is reduced
         until the widest line fits maxw (default 86% of the frame) and the block fits maxh (default 42% of the frame)."""
+        color = self.ink if color is None else color
+        if themes.lum(color) < 120: shadow = 0
         lines = [l for l in lines if l != ""] or [""]; mw = maxw or self.W * 0.86; mh = maxh or self.H * 0.42
         for _ in range(3):   # a line far too wide for the container: step the size down and re-wrap it, before any plain shrinking
             if max(self._len(l, size, bold) for l in lines) > mw * 1.25 and any(" " in l for l in lines):
@@ -193,8 +226,9 @@ class Film:
         """Letter-by-letter text sized to fit the frame width."""
         mw = maxw or self.W * 0.86; w = self._len(text, size, True) + track * self.U * max(len(text) - 1, 0); k = min(1.0, mw / max(w, 1))
         return jb.letters(text, max(10, int(size * k * self.U)), self.fb[0], self.fb[1], int(track * k * self.U), cy)
-    def ltext(self, img, txt, x, cy, size, bold=False, op=1.0, color=jb.WHITE, align="left", maxw=None):
+    def ltext(self, img, txt, x, cy, size, bold=False, op=1.0, color=None, align="left", maxw=None):
         """Text at a position (left/right/center aligned), for labels. Shrinks to maxw when given."""
+        color = self.ink if color is None else color
         if maxw: size = max(size * min(1.0, maxw / max(self._len(txt, size, bold), 1)), 10)
         p, wt, ix = self.fb if bold else self.fr; s = max(8, int(size * self.U)); ft = jb.font(p, s, wt, ix); w = int(ft.getlength(txt)) + 4
         im = Image.new("L", (w, int(s * 1.5)), 0); ImageDraw.Draw(im).text((2, s * 0.12), txt, font=ft, fill=255); m = np.asarray(im, np.float32) / 255 * op
@@ -207,7 +241,14 @@ class Film:
     def bg(self, spec, u, n, f, move="push", i=0):
         """Background: None (palette dark), '#hex'/colour, (top, bottom) gradient, or an image path."""
         W, H = self.W, self.H
+        if spec is None and self.theme:                # a theme paints its own background; the text colour follows its brightness
+            k_ = self.theme["bg"]; c = self.pal[self.cur % len(self.pal)] if k_ in ("field", "brutal") else self.pal[0]
+            self._ink = col(self.theme["ink"]) if self.theme.get("ink") else (np.float32((20, 20, 24)) if themes.lum(c) > 140 else jb.WHITE)
+            return themes.paint(k_, np.float32(c), f, self.fps, self.U, self.pal)
         if spec is None: spec = self.pal[0]
+        if self.theme and not (isinstance(spec, str) and not spec.startswith("#")):
+            c_ = col(spec) if not isinstance(spec, (tuple, list)) or len(spec) == 3 and np.isscalar(spec[0]) else col(spec[0]); self._ink = np.float32((20, 20, 24)) if themes.lum(c_) > 140 else jb.WHITE
+        elif self.theme: self._ink = jb.WHITE
         if isinstance(spec, str) and not spec.startswith("#"):
             im = jb.art(spec); z, nx, ny, par = MOVES[move](u / max(n, 1)); z0 = max(1.0, H * im.shape[1] / (W * im.shape[0]))
             return jb.cam(im, z0 * z, nx, ny, f, par=par, wob=0)
@@ -223,7 +264,7 @@ class Film:
         lines = text.split("\n"); size = 170 if max(len(l) for l in lines) <= 10 else 120
         def draw(u, n, f):
             img = self.bg(bg, u, n, f, move); sc = 1 + 0.35 * (1 - eo(u / 8, 4)) + 0.03 * u / n; op = clamp(u / 3) * (1 - eio((u - (n - 5)) / 5))
-            cy = self.H * (y or (0.44 if sub else 0.48)); hh = self.block(img, lines, cy, size, True, op, color=col(color) if color else jb.WHITE, scale=sc)
+            cy = self.H * (y or (0.44 if sub else 0.48)); hh = self.block(img, lines, cy, size, True, op, color=col(color) if color else None, scale=sc)
             if sub: self.block(img, self.wrap(sub, 46), cy + hh + 66 * self.U, 46, False, maxh=self.H * 0.14, op=eio((u - 8) / 8) * (1 - eio((u - (n - 5)) / 5)))
             return img + 120 * np.exp(-u / 2.0)
         return self._add(draw, dur, kind="title", **k)
@@ -310,7 +351,7 @@ class Film:
             for i, ls in enumerate(rows):
                 v = u - 10 - i * step
                 for l in ls:
-                    jb.put(img, *self.T(l, 64 * k_, False), y + 14 * self.U * (1 - eo(v / 12)), eio(v / 8) * o, shadow=0.3); y += 64 * 1.3 * k_ * self.U
+                    jb.put(img, *self.T(l, 64 * k_, False), y + 14 * self.U * (1 - eo(v / 12)), eio(v / 8) * o, self.ink, 0.3 if themes.lum(self.ink) > 120 else 0); y += 64 * 1.3 * k_ * self.U
                 y += 30 * k_ * self.U
             return img
         return self._add(draw, dur or 1.5 + 1.1 * len(items), kind="bullets", meta=dict(count=len(items)), **k)
@@ -512,7 +553,7 @@ class Film:
         def draw(u, n, f):
             img = self.bg(bg, u, n, f); o = self._io(u, n, 4); v = target * eo(u / (n * 0.55), 3)
             s = f"{v:,.{dec}f}" if "," in num else f"{v:.{dec}f}"
-            self.block(img, [pre + s + suf], self.H * 0.44, 280, True, o, color=col(color) if color else jb.WHITE, scale=1 + 0.06 * (1 - eo(u / 10)))
+            self.block(img, [pre + s + suf], self.H * 0.44, 280, True, o, color=col(color) if color else None, scale=1 + 0.06 * (1 - eo(u / 10)))
             if label: self.block(img, self.wrap(label, 56), self.H * 0.44 + 230 * self.U, 56, False, eio((u - 8) / 8) * o)
             return img
         return self._add(draw, dur, kind="stat", **k)
@@ -744,7 +785,7 @@ class Film:
         def draw(u, n, f):
             img = self.bg(bg, u, n, f)
             if C is not None: img = self._lockup(img, C, u, cy - self.H * 0.22, min(self.W, self.H) * 0.24)
-            jb.put_letters(img, L, u - (14 if C is not None else 4), max(1, min(3, int((n - 50) / max(len(L), 1)))))
+            jb.put_letters(img, L, u - (14 if C is not None else 4), max(1, min(3, int((n - 50) / max(len(L), 1)))), self.ink, 0.4 if themes.lum(self.ink) > 120 else 0)
             if sub: self.block(img, self.wrap(sub, 44), cy + 120 * self.U, 44, False, eio((u - 30) / 14))
             return img
         return self._add(draw, dur, kind="outro", meta=dict(letters=len(L), delay=14 if C is not None else 4), **k)
@@ -752,7 +793,7 @@ class Film:
         """Closing card: letters arrive one at a time, optional small line, fade out."""
         L = self.L(text, 88, 18, self.H * 0.46)
         def draw(u, n, f):
-            img = self.bg(bg, u, n, f); jb.put_letters(img, L, u - 4, max(1, min(3, int((n - 40) / max(len(L), 1)))))
+            img = self.bg(bg, u, n, f); jb.put_letters(img, L, u - 4, max(1, min(3, int((n - 40) / max(len(L), 1)))), self.ink, 0.4 if themes.lum(self.ink) > 120 else 0)
             if sub: self.block(img, self.wrap(sub, 44), self.H * 0.46 + 130 * self.U, 44, False, eio((u - 24) / 14))
             return img
         return self._add(draw, dur, kind="end", meta=dict(letters=len(L), delay=4), **k)
@@ -872,12 +913,17 @@ class Film:
         s = 0
         for sc in self.scenes: sc["start"] = s; s += sc["n"]
         self.total = s
+    safe = property(lambda self: (int(self.W * 0.06), int(self.H * (0.14 if self.H >= self.W * 1.5 else 0.06)), int(self.W * (0.88 if self.H >= self.W * 1.5 else 0.94)), int(self.H * (0.78 if self.H >= self.W * 1.5 else 0.94))))   # (x0, y0, x1, y1) in px: keep words inside; Reels, TikTok and Shorts cover the top 14%, the bottom 22% and the right edge with their own buttons
     def frame(self, f):
+        if not self.mblur: return self._frame1(f)
+        a, b, c = self._frame1(max(f - 1, 0)).astype(np.float32), self._frame1(f).astype(np.float32), self._frame1(min(f + 1, self.total - 1)).astype(np.float32)   # a 3-tap shutter: fast movement smears like film
+        return np.clip(0.25 * a + 0.5 * b + 0.25 * c, 0, 255).astype(np.uint8)
+    def _frame1(self, f):
         i = max(j for j, sc in enumerate(self.scenes) if sc["start"] <= f); sc = self.scenes[i]; u = f - sc["start"]; n = sc["n"]
         img = np.asarray(sc["draw"](u, n, f), np.float32); tr = sc["tr"] if i else "cut"; W, H = self.W, self.H
         if sc["note"]:   # small footnote pill, e.g. "sample data"
             wn = self._len(sc["note"], 26, False) + 44 * self.U; y_ = H - 70 * self.U; img = img.copy()
-            cv2.rectangle(img, (int(W / 2 - wn / 2), int(y_ - 24 * self.U)), (int(W / 2 + wn / 2), int(y_ + 24 * self.U)), (30, 28, 28), -1, cv2.LINE_AA); self.ltext(img, sc["note"], W / 2, y_, 26, False, 0.9, align="center", maxw=W * 0.8)
+            cv2.rectangle(img, (int(W / 2 - wn / 2), int(y_ - 24 * self.U)), (int(W / 2 + wn / 2), int(y_ + 24 * self.U)), (30, 28, 28), -1, cv2.LINE_AA); self.ltext(img, sc["note"], W / 2, y_, 26, False, 0.9, jb.WHITE, align="center", maxw=W * 0.8)
         if i and tr != "cut":
             pv = self.scenes[i - 1]; prev = lambda: np.asarray(pv["draw"](pv["n"] - 1, pv["n"], f), np.float32)
             if tr == "fade" and u < 10: a = eio((u + 1) / 11); img = prev() * (1 - a) + img * a
@@ -890,9 +936,11 @@ class Film:
             elif tr == "glitch" and u < 4: img = jb.glitch(img if u > 1 else prev(), f, 0.8)
             elif tr == "white": img = img + 255 * (1 - eo(u / 16, 2))
         if i + 1 < len(self.scenes) and self.scenes[i + 1]["tr"] == "white" and sc["kind"] != "crt": img = img + 255 * ei((u - (n - 8)) / 8, 2)
-        fn = self.fin; img = jb.post(img, f, bloom=self.bloom, grain=fn["grain"], vignette=fn["vignette"], tint=fn["tint"], fringe=fn["fringe"], contrast=fn["contrast"], streak=fn["streak"], warmth=fn["warmth"], sat=fn["sat"])
-        if f < 6: img = img * eio((f + 1) / 7)
-        if f > self.total - 14: img = img * (1 - eio((f - (self.total - 14)) / 12))
+        fn = self.fin; img = jb.post(img, f, bloom=self.bloom, grain=0 if self.ffgrain else fn["grain"], vignette=fn["vignette"], tint=fn["tint"], fringe=fn["fringe"], contrast=fn["contrast"], streak=fn["streak"], warmth=fn["warmth"], sat=fn["sat"])
+        if self.grade: img = self.grade(img, f, self.U, self.fps) if callable(self.grade) else kinds.apply_grade(img, self.grade)
+        if self.fx: img = self.fx(img, f, self.U, self.fps) if callable(self.fx) else kinds.apply_fx(img, self.fx, f, self.U, self.fps)
+        if f < 6 and not self.exact: img = img * eio((f + 1) / 7)
+        if f > self.total - 14 and not self.exact: img = img * (1 - eio((f - (self.total - 14)) / 12))
         return np.clip(img, 0, 255).astype(np.uint8)
 
     # ---------- audio ----------
@@ -902,6 +950,9 @@ class Film:
             tmp = path + ".m.wav"; subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", self.music_file, "-t", str(self.total / self.fps + 1), "-ar", str(s.sr), "-ac", "2", tmp], check=True)
             w = wave.open(tmp); x = np.frombuffer(w.readframes(w.getnframes()), np.int16).reshape(-1, 2) / 32768; w.close(); os.remove(tmp)
             s.dry[:min(len(x), s.N)] += x[:s.N] * 0.8
+        elif self.genre:
+            self.music_info = genres.compose(s, b, self.genre, self.music_seed, self.energy, self.key)
+            if self.air: s.wind(0, self.total, 0.05)
         elif mood != "none":
             # Each video gets its own music: the seed picks the chord set, where the loop starts, the key and one of three
             # arrangements per mood. The same seed (by default made from the film's name) always gives the same music.
@@ -955,14 +1006,15 @@ class Film:
                         if var == 2: s.add(s.dry, s.kick(), t(f0 + 2.5 * b), g=0.6 * E)
                         for e in range(8): s.add(s.dry, s.hat(), t(f0 + e * b / 2), pan=-0.3, g=(0.10 if e % 2 else 0.06) * E * (1.3 if var == 1 and e % 2 else 1))
         fxg = self.sfx                                   # level of the automatic sounds (0 = none)
+        acc = genres.GENRES[self.genre]["cut"] if self.genre else {"cinematic": "boom", "calm": "none"}.get(mood, "crash")   # how cuts are accented
         for i, sc in enumerate(self.scenes):           # accents on cuts
             if i == 0 or mood == "none" or self.music_file or fxg <= 0: continue
-            if sc["tr"] in ("whip", "zoom", "wipe") and "whoosh" not in self.mute: s.add(s.wet, s.whoosh(), t(sc["start"]) - 0.22, g=0.4 * fxg)
-            if mood == "cinematic" and "hit" not in self.mute:
+            if sc["tr"] in ("whip", "zoom", "wipe") and "whoosh" not in self.mute and acc != "none": s.add(s.wet, s.whoosh(), t(sc["start"]) - 0.22, g=0.4 * fxg)
+            if acc == "boom" and "hit" not in self.mute:
                 big = sc["kind"] in ("logo", "end", "outro") or i == len(self.scenes) - 1
                 s.add(s.dry, s.boom() if big else s.taiko(), t(sc["start"]), g=(0.8 if big else 0.7) * fxg); s.add(s.wet, s.crash(3 if big else 1.6, 1.2 if big else 4), t(sc["start"]), g=(0.16 if big else 0.06) * fxg)
-            elif mood in ("upbeat", "tech", "hype") and "hit" not in self.mute: s.add(s.wet, s.crash(1.4, 4), t(sc["start"]), g=0.10 * fxg)
-            if sc["kind"] == "logo" and sc["tr"] == "cut" and mood != "calm" and "hit" not in self.mute:   # trace then hit
+            elif acc == "crash" and "hit" not in self.mute: s.add(s.wet, s.crash(1.4, 4), t(sc["start"]), g=0.10 * fxg)
+            if sc["kind"] == "logo" and sc["tr"] == "cut" and acc in ("boom", "crash") and "hit" not in self.mute:   # trace then hit
                 hit = sc["start"] + int(sc["n"] * 0.42); s.add(s.wet, s.reverse_crash(1.5), t(hit) - 1.5, g=0.18 * fxg); s.add(s.dry, s.boom(), t(hit), g=0.9 * fxg); s.add(s.wet, s.crash(3.5, 1.1), t(hit), g=0.2 * fxg)
         for sc in self.scenes:                          # sounds that match what each scene shows
             for off, name, g, d, pt in self._cues(sc):
@@ -1010,6 +1062,7 @@ class Film:
             else: C.append((0, "pop", 0.4, None, 0.8))
             C += [(t1 + 14 + j * 3, "tick", 0.10, None, 1) for j in range(m["letters"])]
         elif k in ("outro", "end"): C += [(m["delay"] + j * 2, "tick", 0.10, None, 1) for j in range(m["letters"])]
+        C += kinds.cues(self, sc)
         for c in sc["sfx"]: C.append((c[0] * fps, c[1], 0.3, c[2] if len(c) > 2 else None, 1))
         return C
     def _write_script(self):
@@ -1039,6 +1092,90 @@ class Film:
             L.append(f"| {i + 1} | {mm(sc['start'])}-{mm(sc['start'] + sc['n'])} | {name} | {cell('; '.join(dict.fromkeys(txt)))} | {cell(sc['say'])}" + (f" (pace {sc['pace']})" if sc["say"] and sc["pace"] not in (None, 1.0) else "") + f" | {sc['tr'] if i else 'fade in'} |")
         L += ["", "## Files used", ""] + ([f"- `{u}`" for u in dict.fromkeys(used)] or ["- none"]) + ["", "## Notes", "", notes.rstrip("\n"), ""]
         open("script.md", "w").write("\n".join(L))
+    def _write_srt(self):
+        """Narration as an .srt file beside the video (the words of each voiced scene, split into short cues across the time it is spoken)."""
+        rows = []; n = 0
+        ts = lambda s: "%02d:%02d:%02d,%03d" % (s // 3600, s % 3600 // 60, s % 60, int(round((s % 1) * 1000)))
+        for sc in self.scenes:
+            if not sc["voice"] or not sc["say"] or sc["say"].startswith("(audio file)"): continue
+            txt = EMOTION.sub(" ", sc["say"]).strip(); t0 = sc["start"] / self.fps + sc["voice_at"]; d = sc["voice"][1]
+            parts = [p_.strip() for p_ in re.split(r"(?<=[.!?,;:])\s+", txt) if p_.strip()]; chunks = []
+            for p_ in parts:                                    # no cue longer than about 42 characters per line, two lines
+                w = p_.split(); cur = ""
+                for x in w:
+                    if cur and len(cur) + len(x) > 60: chunks.append(cur); cur = x
+                    else: cur = (cur + " " + x).strip()
+                if cur: chunks.append(cur)
+            tot = sum(len(c) for c in chunks) or 1; t = t0
+            for c in chunks:
+                dd = d * len(c) / tot; n += 1; rows.append("%d\n%s --> %s\n%s\n" % (n, ts(t), ts(t + dd), c)); t += dd
+        if rows: open(os.path.splitext(self.out)[0] + ".srt", "w").write("\n".join(rows)); print("  captions: " + os.path.splitext(os.path.relpath(self.out))[0] + ".srt")
+    READ_KINDS = ("title", "intro", "outro", "end", "highlight", "quote", "bullets", "stat", "timeline", "review", "changelog", "notes", "versus", "anatomy", "image", "clip", "phone", "browser", "product", "cta", "laptop", "icons")
+    def _reading_check(self):
+        """Can people read what is on screen? Rule: a scene needs about (letters / 16 + 1.0) seconds for its words. Warns for scenes that are shorter. Fast type scenes are exempt on purpose."""
+        w = []
+        def words(v):
+            if isinstance(v, str): return [] if (os.path.exists(v) or v.startswith(("http", "#", "/")) or len(v) > 300) else [v]
+            if isinstance(v, dict): return [str(x) for x in v.keys() if isinstance(x, str)] + [w_ for x in v.values() for w_ in words(x)]
+            if isinstance(v, (list, tuple)): return [x for y in v for x in words(y)]
+            return []
+        for i, sc in enumerate(self.scenes):
+            if sc["kind"] not in self.READ_KINDS: continue
+            name, a, k = sc.get("call", (sc["kind"], (), {})); txt = [t for v in list(a) + [k.get(x) for x in ("text", "sub", "title", "label", "by", "done")] for t in words(v)]
+            letters = sum(len(t) for t in txt if len(t) > 1)
+            if letters < 12: continue
+            need = letters / 16.0 + 1.0; have = sc["n"] / self.fps
+            if sc["voice"]: need = max(need * 0.6, sc["voice"][1] + 0.4)
+            if have < need * 0.85: w.append("scene %d (%s): %d letters in %.1f s; about %.1f s are needed to read them (shorten the words or lengthen the scene)" % (i + 1, name, letters, have, need))
+        return w
+    def _audio_check(self, wav):
+        """Checks on the finished mix: real silences exist (a film at one level is flat), and the low end does not swamp everything else."""
+        if not os.path.exists(wav): return []
+        w = wave.open(wav); x = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float32) / 32768; ch = w.getnchannels(); sr = w.getframerate(); w.close()
+        if ch == 2: x = x.reshape(-1, 2).mean(1)
+        if len(x) < sr * 3: return []
+        hop = int(0.05 * sr); n = len(x) // hop; r = np.sqrt((x[:n * hop].reshape(n, hop) ** 2).mean(1)); db = 20 * np.log10(r + 1e-9); quiet = db < db.max() - 34; runs = 0; c = 0
+        for q_ in quiet:
+            c = c + 1 if q_ else 0
+            if c == 6: runs += 1
+        out = []; dur = len(x) / sr
+        if dur >= 20 and runs == 0 and self.mood != "none": out.append("no real silence in %.0f s: drop the music for a beat before the turn or the peak, then bring the next sound in hard" % dur)
+        sp = np.abs(np.fft.rfft(x[:sr * 40])) ** 2; fr = np.fft.rfftfreq(min(len(x), sr * 40), 1 / sr); lo = sp[(fr >= 20) & (fr < 120)].sum(); hi = sp[(fr >= 120) & (fr < 6000)].sum() + 1e-9
+        if lo / hi > 1.4: out.append("bass-heavy: the 20-120 Hz band carries %.1fx the energy of the rest; lower energy=, change key=, or pick another genre (small speakers will lose it)" % (lo / hi))
+        return out
+    WORLD_CAMS = ("wide", "full", "crane", "orbit", "two", "close", "over", "low", "top", "prop"); MODEL_CAMS = ("turntable", "orbit", "push", "pull", "hero", "low", "top")
+    def _camera_check(self):
+        """3D films must be shot like films: several different angles, an establishing or scale shot, no angle repeated for no reason. Returns warnings."""
+        shots = []
+        for sc in self.scenes:
+            c = (sc.get("call") or ("",))[0]
+            if c.startswith("world shot "): shots.append(("world", c[11:].split(":")[0]))
+            elif c.startswith("model:"): shots.append(("model", c[6:]))
+        if len(shots) < 3: return []
+        w = []; names = [s[1] for s in shots]; kinds_ = {s[0] for s in shots}; known = {"world": self.WORLD_CAMS, "model": self.MODEL_CAMS}
+        need = min(4, len(shots))
+        if len(set(names)) < need:
+            unused = [c for k_ in kinds_ for c in known[k_] if c not in names][:6]; w.append("only %d different angle(s) across %d 3D shots (%s); use at least %d. Not used yet: %s" % (len(set(names)), len(shots), ", ".join(dict.fromkeys(names)), need, ", ".join(unused)))
+        rep = [names[i] for i in range(1, len(names)) if names[i] == names[i - 1] and names[i] not in ("two", "close", "over")]
+        if rep: w.append("the same angle twice in a row (%s): change the angle, or hold one longer shot instead" % ", ".join(dict.fromkeys(rep)))
+        if not any(n in ("wide", "crane", "orbit", "top", "low", "turntable", "hero") for n in names): w.append("no establishing or scale shot (wide, crane, orbit, top, low, hero): open or close on one")
+        return w
+    def _workflow_checks(self):
+        """Before a render: the plan gate, and the variety check against recent videos. Prints, never blocks."""
+        try:
+            import plan as _plan, variety as _variety
+            if os.path.exists("plan.md"):
+                st = _plan.status("plan.md")
+                if st["problems"]: print("plan: " + "; ".join(st["problems"]))
+                else: print("plan: complete (research, toolkit match, gaps, variety and script are filled in)")
+            else: print("plan: no plan.md in this folder; the workflow starts with `python lib/plan.py new <name>` (references/workflow.md)")
+            for w_ in self._camera_check(): print("camera: " + w_)
+            for w_ in self._reading_check(): print("reading: " + w_)
+            for w_ in self._audio_check(os.path.join(self.work, self.name + ".wav")): print("audio: " + w_)
+            fp = _variety.fingerprint(self)
+            for w_ in _variety.check(fp): print("variety: " + w_)
+            if not self.draft: _variety.record(fp)
+        except Exception as e: print("workflow check skipped:", e)
     def _handoff(self):
         """After a finished render: make a small preview strip and print the facts the closing message needs,
         so the message can be short and exact. See "The final message" in SKILL.md."""
@@ -1073,8 +1210,9 @@ class Film:
         if main:
             print(f"{self.name}: {len(self.scenes)} scenes, {self.total} frames, {self.total / self.fps:.1f}s, {self.W}x{self.H}" + (" (draft)" if self.draft else ""))
             for sc in self.scenes: print("  %5d  %-8s %4.1fs  %s" % (sc["start"], sc["kind"], sc["n"] / self.fps, sc["tr"]))
-            self._score(wav); self._write_script()
-        jb.run(self.frame, self.total, self.out, audio=wav if os.path.exists(wav) else None, crf=28 if self.draft else 20)
+            self._score(wav); self._write_script(); self._write_srt(); self._workflow_checks()
+            if getattr(self, "music_info", None): print("  music: %(genre)s, %(bpm)d bpm, %(mode)s" % self.music_info)
+        jb.run(self.frame, self.total, self.out, audio=wav if os.path.exists(wav) else None, crf=28 if self.draft else 21, grain=(0 if self.draft else self.fin["grain"]) if self.ffgrain else 0)
         if main and not self.draft: self._handoff()
 
 def json_quote(p):
@@ -1087,7 +1225,25 @@ def _record(name, fn):
         for sc in self.scenes[n0:]:
             if name == "web" or "call" not in sc: sc["call"] = (name, a, {x: y for x, y in k.items() if x != "voice"})
         return r
-    wrapped.__doc__ = fn.__doc__; wrapped.__name__ = name; return wrapped
-for _n in ("intro", "outro", "title", "image", "clip", "web", "words", "bullets", "stat", "bars", "columns", "line", "donut", "heatmap", "icons", "map", "quote", "phone", "browser",
-           "crt", "logo", "end", "window", "slices", "carousel", "grid", "tunnel", "loader", "lockcut", "talk", "custom"):
+    wrapped.__doc__ = fn.__doc__; wrapped.__name__ = name; wrapped.__wrapped__ = fn; return wrapped
+kinds.install(Film)
+def _asset(self, name, role="main"):
+    """Path of a saved asset (character sheet, sprite sheet, 3D model ...) from the workspace asset library: film.image(film.asset("joybot-sheet"))."""
+    import assets; return assets.path(name, role)
+Film.asset = _asset
+def _register_scene(cls, name, fn):
+    """Add a scene method made for this project (see scaffold.py): it is recorded in script.md like every other scene."""
+    setattr(cls, name, _record(name, fn))
+Film.register_scene = classmethod(_register_scene)
+def _extend(self, path):
+    """Load a project-local extension file made with scaffold.py (new scenes, themes, effects): film.extend("local_hologram.py")."""
+    import importlib.util
+    path = os.path.abspath(path); spec = importlib.util.spec_from_file_location("jb_local_" + re.sub(r"\W", "_", os.path.basename(path)), path); mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+    if hasattr(mod, "install"): mod.install(Film)
+    return self
+Film.extend = _extend
+SCENE_NAMES = ("intro", "outro", "title", "image", "clip", "web", "words", "bullets", "stat", "bars", "columns", "line", "donut", "heatmap", "icons", "map", "quote", "phone", "browser",
+               "crt", "logo", "end", "window", "slices", "carousel", "grid", "tunnel", "loader", "lockcut", "talk", "custom") + kinds.NAMES   # every scene method; catalog.py lists them
+TRANSITIONS = ("cut", "fade", "whip", "white", "zoom", "wipe", "iris", "bars", "doors", "pie", "glitch")
+for _n in SCENE_NAMES:
     setattr(Film, _n, _record(_n, getattr(Film, _n)))

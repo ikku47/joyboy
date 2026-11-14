@@ -2,7 +2,7 @@
 # joyboy workspace setup. Safe to run every time: it only does work that has not been done yet.
 #   setup.sh [workspace]        default workspace: ~/joyboy  (or $JOYBOY_HOME)
 # Creates:  <workspace>/.venv      Python environment, packages installed once
-#           <workspace>/lib        the toolkit (joyboy.py, score.py, quick.py), refreshed when the skill changes
+#           <workspace>/lib        the toolkit (joyboy.py, score.py, genres.py, themes.py, kinds.py, looks.py, foley.py, styles.py, quick.py ...), refreshed when the skill changes
 #           <workspace>/voices     Piper voice models, downloaded once
 #           <workspace>/SYSTEM.md  checklist of what this machine has, rewritten on every run
 #           <workspace>/projects   one folder per video
@@ -35,7 +35,7 @@ if ! ls "$WS/voices"/*.onnx >/dev/null 2>&1 && "$PY" -c "import piper" 2>/dev/nu
   "$PY" -m piper.download_voices --download-dir "$WS/voices" en_US-lessac-medium || echo "WARNING: voice download failed"
 fi
 
-for f in joyboy.py score.py quick.py maps.py ambience.py world.py model3d.py sitekit.py; do
+for f in joyboy.py score.py genres.py themes.py kinds.py toolscan.py assets.py blender_asset.py blender_job.py catalog.py refscan.py variety.py plan.py scaffold.py quick.py maps.py ambience.py world.py model3d.py sitekit.py looks.py foley.py styles.py imagegen.py; do
   if [ ! -f "$WS/lib/$f" ] || [ "$SKILL/$f" -nt "$WS/lib/$f" ]; then cp "$SKILL/$f" "$WS/lib/$f"; fi
 done
 
@@ -63,6 +63,10 @@ if [ -n "$INSTALLER" ]; then
 fi
 
 "$PY" "$SKILL/inventory.py" "$WS" >/dev/null || true
+mkdir -p "$WS/assets"
+"$PY" "$SKILL/toolscan.py" "$WS" || true      # TOOLS.md: every tool, app, MCP server, skill and local model on this machine
+JOYBOY_HOME="$WS" "$PY" "$SKILL/assets.py" index >/dev/null 2>&1 || true
+JOYBOY_HOME="$WS" "$PY" "$SKILL/catalog.py" build "$WS" >/dev/null 2>&1 || true   # CATALOG.md: every scene, theme, genre, grade, effect and saved asset
 
 echo "READY"
 echo "workspace: $WS"
@@ -70,3 +74,6 @@ echo "python:    $PY"
 echo "lib:       $WS/lib"
 echo "projects:  $WS/projects"
 echo "checklist: $WS/SYSTEM.md   (read this first)"
+echo "tools:     $WS/TOOLS.md    (every local tool, MCP server, skill and model)"
+echo "catalog:   $WS/CATALOG.md  (everything the toolkit can do; search with catalog.py find)"
+echo "assets:    $WS/assets/INDEX.md   (characters, sheets, sprites, models, with rebuild recipes)"

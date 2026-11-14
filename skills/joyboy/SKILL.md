@@ -1,6 +1,6 @@
 ---
 name: joyboy
-description: Make any kind of video fast, entirely in code - promos, teasers, logo reveals, explainers, app demos, website tours, slideshows, data stories, reels, short films and dialogues - with generated music, ambient sound, sound effects and narration, rendered to MP4 in portrait, landscape or square. A scene-based fast path turns ten lines into a finished video; a full kit (camera moves over stills, type, logo animation, charts, maps, icons, talking characters, procedural 3D worlds, GSAP, effects, synthesized audio) covers anything custom. Python and ffmpeg at the core (node and Chrome for web, character and 3D scenes); no video model or stock footage. Use this skill whenever the user asks for a video, reel, short film, story, skit, teaser, trailer, ad, promo, explainer, slideshow, logo animation, intro/outro, motion graphics or "a video like this one", wants stills or screenshots animated, wants music, sound effects or voiceover for a video, or says "joyboy" - even if they do not say how.
+description: Make any kind of video fast, entirely in code - promos, teasers, logo reveals, explainers, app demos, website tours, slideshows, data stories, reels, short films and dialogues - with generated music, ambient sound, sound effects and narration, rendered to MP4 in portrait, landscape or square. Eight visual themes, twelve music genres and trending formats (kinetic type, stages of, timelines, countdowns, product heroes, chat stories, stick figures, satisfying loops) keep every video from looking or sounding the same. A scene-based fast path turns ten lines into a finished video; a full kit (camera moves over stills, type, logo animation, charts, maps, icons, talking characters, procedural 3D worlds, GSAP, effects, synthesized audio) covers anything custom. Python and ffmpeg at the core (node and Chrome for web, character and 3D scenes); no video model or stock footage. Use this skill whenever the user asks for a video, reel, short film, story, skit, teaser, trailer, ad, promo, explainer, slideshow, logo animation, intro/outro, motion graphics or "a video like this one", wants stills or screenshots animated, wants music, sound effects or voiceover for a video, or says "joyboy" - even if they do not say how.
 ---
 
 # joyboy: a technique kit for code-rendered video
@@ -19,11 +19,44 @@ Every frame is computed by a Python `frame(f)` function, the audio is synthesize
 - `scripts/sitekit.py`, `scripts/site_save.mjs` - download a real public website and animate its own elements (tours, explainers, walk-throughs).
 - `scripts/world.py`, `scripts/world.js`, `scripts/world_still.mjs` - story scenes in a procedural low-poly 3D world with people, weather, time of day and camera shots.
 - `scripts/ambience.py` - background sound synthesized in code (fire, wind, rain, thunder, waves, stream, crickets, traffic).
+- `scripts/catalog.py` - everything the toolkit can do, searchable (`catalog.py find "what the beat needs"`); `scripts/refscan.py` - measures a reference video and checks a render against it; `scripts/variety.py` - keeps videos different; `scripts/plan.py` - the plan gate; `scripts/scaffold.py` - makes a missing scene, theme or effect.
+- `scripts/toolscan.py`, `scripts/assets.py`, `scripts/blender_asset.py`, `scripts/blender_job.py` - local tool scan, asset library, headless Blender.
+- `scripts/genres.py` - the music engine: twelve genres (lofi, house, trap, synthwave, ambient, acoustic, funk, epic, phonk, afro, pop, techno), each with its own instruments, groove and a melody written from the seed.
+- `scripts/themes.py` - eight visual themes (flat, studio, blueprint, brutal, aurora, paper, neon, retro) with their own backgrounds, palettes, typefaces and ink.
+- `scripts/kinds.py` - twenty-one more scene types: kinetic, highlight, stages, timeline, countdown, versus, product, chat, satisfying, stick, anatomy, before_after, wire, cta, skit, laptop, notes, review, wrapped, lyrics, changelog.
 - `scripts/joyboy.py` - picture toolkit (import as `jb`, call `jb.init(w, h, fps)` first).
 - `scripts/score.py` - audio toolkit (`Score` class, everything placed by frame number).
 - `scripts/example_film.py` - shows how the pieces plug together and how to render. It is an API demo only; do not copy its storyline, wording or shot order.
 - `references/playbooks.md` - common kinds of video and the scenes that suit each.
 - `references/recipes.md` - parameter values and formulas for each technique, plus known pitfalls. Read it when you start building.
+
+## The workflow: follow it from the first message
+
+Every video goes through the same gated workflow. **The script is written last**, after you know what is trending, what the toolkit holds, what must be made and how the video will differ from the last ones. Full detail, commands and templates: `references/workflow.md` (read it before the first video).
+
+| Step | What happens | Tool |
+|---|---|---|
+| 0 | Setup; read `SYSTEM.md`, `TOOLS.md`, `CATALOG.md`, `assets/INDEX.md`, recent videos; open `plan.md` | `setup.sh`, `plan.py new` |
+| 1 | The brief, one question at a time; ask for a reference | "Brief first" below |
+| 2 | Research what is working now: formulas with evidence | `ig-viral`, Agent Reach, the browser |
+| 3 | If a reference exists: measure it (shots, cuts, colours, tempo), look at it and describe every shot | `refscan.py scan` |
+| 4 | Toolkit match: for every beat, search the catalog; choose theme, genre, look, grade, fx | `catalog.py find` |
+| 5 | **Make what is missing** instead of using something that does not fit | `scaffold.py`, `blender_asset.py`, `assets.py` |
+| 6 | Variety: what differs from the last videos | `variety.py --suggest` |
+| 7 | **Only now:** the treatment (three structures, benchmark, shot list with reasons, cue map, sound table; `references/directing.md`), then the script (hooks and beats with `ig-reel`, `ig-human` on the words) and `film.py`; render three style frames to prove the look first | `plan.py check` must pass |
+| 8 | Draft, sheet, (reference check), full render, caption, deliver | `refscan.py check`, `ig-caption` |
+
+Rules that never bend:
+- Do not write a script or `film.py` until `plan.py check` passes sections 1 to 6. A render prints the plan's status; do not leave it incomplete.
+- Choose theme, genre, grade and scenes from the research and the match table, never by habit. If the catalog has no real match for a beat, build the piece (step 5); do not settle.
+- With a reference, accuracy is measured: say the `refscan.py check` score, aim for 85 or more, and fix what it flags. Copy formulas and measurements, never another creator's script, voice or footage.
+- Every video must differ from the last ones (`variety:` lines in the render). Say in the final message what was chosen and why.
+- You, the agent, must tell yourself what the toolkit has before scripting: the script is written *with* the catalog and the research in hand.
+
+**Styles, looks and sound at a glance** (details in the sections below and in `references/styles.md`):
+- `Film(style="risograph")` sets a whole medium at once (theme, look treatment, grade, music, sound bed); 49 styles in six families: print, hand-drawn, screens and instruments, technical drawing, film and light, layouts. Anything passed explicitly wins.
+- 17 themes, 14 whole-picture looks (`fx=`: riso, halftone, dither, engrave, bands, duotone, thermal, xray, ascii, film, cel, tiltshift, vhs, pixel), 8 grades, 18 music genres, a foley kit and 5 sound beds, 24 scene types.
+- Every render prints what it checks: `plan:`, `variety:`, `camera:` (3D angles), `reading:` (can the text be read), `audio:` (silences, bass), `master:` (loudness).
 
 ## Brief first, then decide
 
@@ -128,6 +161,8 @@ All joyboy work lives in one persistent folder so that tools are installed once 
 ~/joyboy/
 ├── .venv/                 Python environment (created once)
 ├── SYSTEM.md              checklist of what this machine has (read first)
+├── TOOLS.md, tools.json   every local tool, app, MCP server, skill and AI model, and which to use for what (read second)
+├── assets/                characters, character sheets, sprite sheets, 3D models, each with a recipe that rebuilds it (INDEX.md lists them)
 ├── voices/                Piper voice models (downloaded once)
 ├── fonts/                 brand fonts saved for reuse
 ├── web/                   GSAP + capture script + page template (installed once)
@@ -136,7 +171,7 @@ All joyboy work lives in one persistent folder so that tools are installed once 
 ├── avatars/               DiceBear characters, cached
 ├── brand/<brand>/         shared brand kit: brand.md, logo, palette, facts
 ├── captures/              cached web-page screenshots
-├── lib/                   joyboy.py, score.py, quick.py (copied from the skill, refreshed when it changes)
+├── lib/                   joyboy.py, score.py, quick.py and the rest of the toolkit (copied from the skill, refreshed when it changes)
 └── projects/
     └── <video-name>/      one folder per video
         ├── script.md      the script, rewritten on every render (see "Keep every video and its script together")
@@ -236,9 +271,66 @@ Nothing is downloaded twice. Before installing anything, check `SYSTEM.md` and t
 
 `~/joyboy/SYSTEM.md` is a short checklist of what this machine already has: Python and packages, ffmpeg, voice-over engines and voices, fonts, toolkit files, and existing projects. `setup.sh` rewrites it on every run.
 
-- Read it right after running setup and before planning the video. It tells you what is ready, so you never check or install something twice.
+- Read it right after running setup and before planning the video, then read `TOOLS.md` and `assets/INDEX.md` (next sections). It tells you what is ready, so you never check or install something twice.
 - Plan with what is ticked. If a video needs something that is not ticked, install it into the workspace once, run `setup.sh` again so the checklist updates, and tell the user what was added.
 - The `## Notes` section at the bottom is kept between runs. Write there anything worth remembering that setup cannot detect: things installed by hand, the user's preferred voice, brand fonts saved to `fonts/`, standing preferences. Never write passwords or API keys in it.
+
+## Local tools: read `TOOLS.md` second
+
+`~/joyboy/TOOLS.md` (and `tools.json`, the same for scripts) is what `toolscan.py` found on this machine, written by `setup.sh` on every run. It is a read-only scan: it installs, starts and signs in to nothing, and it never prints a secret (API keys show only as set or not set).
+
+- **What it lists:** command-line tools and apps (Blender, Codex, Claude Code, Godot, Unreal, Unity, Krita, Aseprite, ffmpeg, ImageMagick, whisper, yt-dlp, node, bun, uv, Xcode, Docker, Chrome ...), MCP servers configured for Claude Code and Codex, installed agent skills, local AI models (Hugging Face cache, uv tools, Ollama, LM Studio, ComfyUI, `~/ai-local`), the machine's memory and disk, and a table **"Pick a tool for the need"** that names the best available tool for each job.
+- **Use what is there, for what it is good at.** Need a 3D character, a character sheet, a sprite sheet or a model: Blender (below). A still image or a character frame: a local image model if one is listed. Reading a profile, a trend or a link: Agent Reach and the `ig-viral` skill. A piece to build in parallel: hand it to the second agent (Codex or another Claude) with the exact file and result needed. A phone screen recording: the iOS simulator tools. If a need has no tool, joyboy's own scenes cover it.
+- **Local first and one heavy job at a time.** Do not send the user's files or brand material to a cloud service unless they ask; do not run several large models at once (they can freeze a laptop); ask before installing, downloading a model, signing in or spending money.
+- The `## Notes` section in TOOLS.md is kept between scans: add tools the scan cannot see (another machine, an account, a preference), never secrets.
+- Run `python ~/joyboy/lib/toolscan.py` again after installing something; `python toolscan.py --find blender` prints one tool's path.
+
+## Asset library: make it once, keep it, rebuild it
+
+Anything made with an outside tool (Blender, a local image model, Codex, a person's hand) goes in `~/joyboy/assets/` with the recipe that made it, so it can be found, used in any video and recreated later. `assets/INDEX.md` is the checklist ([x] = files present, plus how to rebuild).
+
+| Kind | What it is |
+|---|---|
+| `character`, `character-sheet` | a character and its sheet of views |
+| `sprite-sheet`, `turntable` | frames in a grid for playing back (`cols`, `rows`, `frames`, `fps` are stored with it) |
+| `model3d` | a `.glb` (and the `.blend` source) |
+| `texture`, `logo`, `image`, `voice`, `music`, `video`, `other` | anything else worth keeping |
+
+**Blender, headless (nothing opens):** `blender_asset.py` builds or renders and registers the result in one step:
+
+```bash
+python ~/joyboy/lib/blender_asset.py mascot joybot --color "#f58a3a" --anim idle     # toy mascot: joybot (glb + blend), joybot-sheet, joybot-sprites
+python ~/joyboy/lib/blender_asset.py sheet model.glb hero-sheet --views 4              # front, three-quarter, side, back of any .glb .fbx .obj .stl .blend
+python ~/joyboy/lib/blender_asset.py turntable model.glb hero-turn --frames 36         # a turn-around: sprite sheet plus a short mp4
+python ~/joyboy/lib/blender_asset.py sprites model.blend hero-walk --anim Walk         # sprite sheet from an animation in the file
+python ~/joyboy/lib/assets.py list                                                     # what exists
+python ~/joyboy/lib/assets.py rebuild joybot-sheet                                      # run the saved recipe again (old files go to _prev/)
+```
+
+- Mascot animations: `idle`, `walk`, `hop`. Any colour. A render takes seconds; run renders one at a time.
+- In a film script: `film.image(film.asset("joybot-sheet"))`, `film.sprite("joybot-sprites", travel=True)` (plays the sprite sheet, walking across the frame with `travel=True`), `film.model(film.asset("joybot"))` for the GLB.
+- Register other work by hand: `python assets.py add NAME --kind character-sheet --tool mflux --file sheet.png --cmd '<the exact command>' --tag mascot`. Always save the command and the seed (or the script) so it can be rebuilt; an asset with no recipe is marked "no recipe saved".
+- Before making a character, prop or sheet, check `assets/INDEX.md`: reuse what exists (the same character across videos keeps a brand consistent) instead of making a new one.
+- `python lib/blender_asset.py qa MODEL` checks any model (watertight, normals, scale, UVs, materials, size); `coverage MODEL NAME` renders nine camera angles and lenses of it. Both are required before a model goes into a video (see "3D work").
+- If Blender is open with the Blender MCP connected (TOOLS.md says), it can be used live for exploration; repeatable work still goes through `blender_asset.py` so it has a recipe.
+
+## Companion skills: the Instagram pack and Agent Reach
+
+`install.sh` also installs the `/ig-*` skills that sit beside joyboy in this pack and links the Agent Reach skill when its command is installed. They are separate skills with their own jobs; hand off to them instead of rewriting their work.
+
+| When the video is for Instagram or any short-form feed | Use |
+|---|---|
+| Find what is working in a niche, rank it, make a swipe file | `ig-viral` (with Agent Reach or the browser, read-only) |
+| The idea, the hooks, the spoken script, the timed beat sheet | `ig-reel` (then joyboy builds it) |
+| The caption, the "... more" line, hashtags | `ig-caption` |
+| A carousel instead of a video | `ig-carousel`; repurposing one long asset: `ig-repurpose` |
+| Stories, comments, replies, DMs, the weekly plan, a profile or past-post audit | `ig-story`, `ig-comment`, `ig-reply`, `ig-dm`, `ig-plan`, `ig-profile`, `ig-audit` |
+| Scrub any text of machine fingerprints before showing it | `ig-human`, on every caption, script and reply |
+| Read a link, a profile, subtitles or a trend on YouTube, Instagram, X, Reddit, Bilibili, the web | `agent-reach` (read-only; the user logs in, never you) |
+
+- Check `TOOLS.md` ("Agent skills installed") to see which of these exist before calling one; if one is missing say so and carry on without it.
+- Research first, then make: run `ig-viral` for the niche, take the formula that works and pick the matching scene types and theme from "Formats that are working" in `references/playbooks.md`, write the script with `ig-reel`, build it here, caption it with `ig-caption`, humanize with `ig-human`.
+- The `/ig-*` skills never post, comment, DM or follow for the user; they write drafts. Keep it that way.
 
 ## Voice-over: which voice to use
 
@@ -337,6 +429,29 @@ film.render()
 | `loader(label, done, mark)` | glitchy loading screen: progress bar and percentage, equaliser bars, scan lines, colour split, then a typed closing word |
 | `logo(mark, text, sub, style)` | logo reveal from a logo image: `trace` (line of light, then hit) or `pop` |
 | `end(text, sub)` | closing card, call to action, contact line |
+| `kinetic(words, per, style, hl)` | huge words, one per beat, with motion blur (`blur`, `slide`, `drop`, `zoom`, `spin`); `hl=[...]` shows chosen words in the accent colour; on the `flat` theme each word gets a new colour field |
+| `highlight(text, hl)` | a sentence typed word by word where the words in `hl` get a marker box (the "In **1999** everything changed" caption look) |
+| `stages(title, items)` | "5 stages of ...": one full-colour card per stage with number and progress track, shaking harder as it goes |
+| `timeline([(time, label), ...], title)` | timestamps down a drawing line: "my day", "one appointment", "how it went" |
+| `countdown(items, title)` | "Top 5": giant numerals counting down, one new colour per rank; items may be `(name, line)` |
+| `versus(left, right, lpoints, rpoints)` | split-screen comparison with a VS badge; tall frames stack the sides, wide frames place them side by side |
+| `product(image, name, tagline, callouts)` | studio hero shot with a floating cut-out PNG, soft floor shadow and callout lines; `callouts=[("Mesh", (-0.5, -0.4))]` |
+| `chat(messages, title)` | a text-message story with typing dots and pop-in bubbles (`[("them", "you up?"), ("me", "always")]`) |
+| `satisfying(style)` | hypnotic wordless loop: `pendulum`, `rings`, `orbits`, `tiles`, `waves`, `spiral` |
+| `stick(action, text)` | a stick figure acting: `idle walk run wave point think celebrate type fall shrug`; `prop="SALE"` adds a sign |
+| `anatomy([(label, seconds, line), ...], title)` | a timeline bar showing how a video or process is built, with a playhead and the current part lit |
+| `before_after(a, b, labels)` | a slider wiping between two pictures |
+| `skit(who, line, ...)` | one beat of a comedy skit with up to three characters: `who="cube"` (a toy bot; `cube="#hex"` recolours it, `glyph=">_"` puts a symbol on its face, `paper="DESIGN\n02"` lays a sheet on the desk, `room="desk"`) or `"head"` (a person with big glasses; `expr` = flat, raised, angry, sad, sleepy, closed). A coloured name pill (`label`, `pill`) sits over a big caption (`line`, none = no caption). `view="wide"` shows the person at a desk with a small bot on the shoulder and a monitor at the left that shows the card; `view="close"` fills the frame. `pip=` is the rounded card at the top (a picture, or a builder below), `notice=("Dana (client)", "text", "optional reply")` a phone banner, `shake=` typing jitter, `dim=` room darkness (`kinds.SKIT_DIM`), `shot=(offset_s, total_s)` to slice one long shot into scenes, `cap=(from_s, to_s)` a caption window. Cut between characters, one line each |
+| `kinds.pip_*` | cards for `skit(pip=...)`: `pip_done(card, 4)` adds a "Done 4s" chip, `pip_slider()` a design-tool slider, `pip_brand(name, "dark"\|"sky"\|"warm")` a made-up brand card, `pip_templates(flips=[...], flicker=(a, b), drift=4)` a template-library panel (scripted flips, a fast scrubbing flicker, a slow drift), `pip_wall(big="140+", scroll=7)` a mosaic with a big number, `pip_seq([(0, a), (3.2, b)])` to switch cards mid-scene |
+| `notes(title, items, folder)` | the "Apple Notes ad": a plain notes screen that types itself; items starting `[x] ` tick, `[ ] ` stay open |
+| `review(reviews, rating, count, badge)` | social proof: review cards drop in with stars, a "Live now" dot and a big rating; `reviews=[("quote", "Name"), ...]` |
+| `wrapped(stats, title)` | a "Wrapped" year-in-review: full-colour story cards with story progress bars; a stat may be `("12,480", "minutes listened")` or `(["a", "b", "c"], "your top songs")` |
+| `lyrics(lines, per)` | lyric / karaoke video: stacked lines, the current one lights word by word, the block scrolls; pair with `film.music("song.mp3")` |
+| `changelog(version, items, title)` | release notes: a version badge, then each change with a NEW / FIX / IMPROVED pill: `[("NEW", "Dark mode"), ("FIX", "Login loop")]` |
+| `sprite(sheet, ...)` | plays a sprite sheet or turntable: an asset-library name (`"joybot-sprites"`) or an image with transparency; `travel=True` walks it across, `size` is its height, `flip`, `text` |
+| `laptop(media, pov)` | a laptop on a glossy dark desk with a mirror reflection and a "POV: client paid $2,750 for this" pill; `media` is a picture or a function that draws the screen |
+| `wire(shape, label)` | a 3D wireframe (`cube`, `pyramid`, `cylinder`, `torus`, `sphere`) whose edges draw themselves like a technical drawing, then turns; best on `blueprint` or `paper` |
+| `cta(keyword, text)` | the "Comment KEYWORD and I'll send you the link" call to action: the keyword types into a comment box, sends, and a DM badge pops |
 | `custom(fn, dur)` | anything else: `fn(u, n, f)` returns a frame built with the `jb` helpers below |
 
 Options every scene accepts:
@@ -354,12 +469,22 @@ Film options:
 - `size`: `portrait`, `landscape`, `square`, `4:5`, or `(w, h)`.
 - `mood`: `cinematic`, `upbeat`, `calm`, `tech`, `hype` (180 BPM, hard cuts, for fast reels), `none` (sets tempo, default transition and the generated music).
 - `lang` - language of the voice-over, e.g. `"es"`; `pace` - default narration speed (see "Voice-over").
+- `theme` - the whole visual system: `flat`, `studio`, `blueprint`, `brutal`, `aurora`, `paper`, `neon`, `retro` (see "Themes"). It sets the background, palette, typeface, ink colour and finish; leave it out for the original dark cinematic look.
+- `genre` - the music style: `lofi`, `house`, `trap`, `synthwave`, `ambient`, `acoustic`, `funk`, `epic`, `phonk`, `afro`, `pop`, `techno`, or `"classic"` for the original score (see "Look and sound"). Left out, the mood and the film's name choose one.
+- `grade` - a colour grade over the finished picture, after the look: `teal_orange` (cinema), `noir`, `bleach`, `sunset`, `mint`, `cross`, `pastel`, `night`. Pick one when the subject has a mood the look does not give; leave it out for true colours.
+- `exact=True` - every scene is exactly the length asked (no beat snapping, no fade in or out, narration speaks up to 1.5x faster to fit). Use it when matching a reference's cut times.
+- `voice_as="M2"` (an option of every scene) - a voice for that scene only, so each character has its own (Supertonic F1-F5, M1-M5, or a Piper name); `Film(tts="supertonic")` for the emotional engine.
+- `mblur=True` - a three-frame shutter: fast movement (kinetic type, whips, slides) smears like film. It costs three times the render time, so use it on fast, short pieces and render the final only.
+- `film.safe` - `(x0, y0, x1, y1)` in pixels: the area clear of Reels, TikTok and Shorts buttons (top 14%, bottom 22% and the right edge on tall frames). Keep important words and logos inside it when placing text in `custom` scenes.
+- `fx` - a treatment on the whole finished picture: `"vhs"` (colour fringing, scan lines, a rolling tracking band, noise) or `"pixel"` (chunky posterised pixels). Use it for a retro, glitch or game piece; leave it out otherwise.
 - `look` - the finish on the picture: `cinematic`, `soft`, `clean`, `punchy`, `warm`, `cool`, `vintage`, `none`, or a dict of strengths (see "Look and sound"). Choose it for every video.
 - `music_seed`, `key`, `energy`, `air` - which variation of the generated music, its key, how full it is, and a wind bed; `sfx`, `mute` - level of the automatic sounds and which to leave out.
 - `bloom` - the glow on bright areas (default 0.8, or what the look sets). Use `bloom=0.2` or less for light or cream backgrounds, which otherwise wash out.
 - `tts` - the voice engine to prefer (`"supertonic"` for emotional voices; see "Voice-over").
 - `palette`, `font`, `font_bold`, `bpm`, `voice_name` (a Piper voice name such as `"ryan"`, or an ElevenLabs voice id).
 - `film.music("song.mp3")` uses an existing track instead of generated music.
+
+Captions: a render with narration also writes `<name>.srt` beside the MP4 (the spoken words in short timed cues). Mention it in the final message so the user can burn it in or upload it as captions.
 
 Real web pages: `shot = film.capture(url, "mobile" | "desktop")` takes a full-length screenshot of a public page (cached in `~/joyboy/captures/`). Use it with `phone(shot, ...)` or `browser(shot, url=...)`. Long pages scroll top to bottom by default; pass `span=(0.0, 0.3)` to scroll only part of the page (start and end as fractions of its length), so a long capture does not race by. Capture the user's real site for a website tour instead of mocking it up; never capture pages behind a login.
 
@@ -393,6 +518,52 @@ s.shot(scroll=(0.2, 0.7), dur=4)                # a plain scroll
 - **Going further:** the element positions are yours to use in a `custom` scene (cut an element out of `page.png` and fly it, stack cards, build a chart from the page's numbers), and a second page of the site is just another `film.site(url)`. For the page inside a phone or browser window, keep using `film.capture` with `phone()` / `browser()`.
 - **Only public pages.** Nothing is typed, clicked or submitted on the real site; pages behind a login are not for this. It is someone else's site: show it honestly, do not alter its words or pass it off as the user's, and leave people's names and faces on it out of focus shots unless the user asks.
 
+## Themes: pick a visual system, do not default to dark
+
+The original look (dark gradient, white type, grain) suits trailers and drama, and it is the wrong look for most of what people watch. Choose a `theme` on purpose for every video; the ink colour flips between black and white by itself so text stays readable on any colour field.
+
+| Theme | Looks like | Suits |
+|---|---|---|
+| `flat` | bright solid colour fields, huge heavy type, a new colour each scene | kinetic type, hooks, listicles, "stages of", creator reels |
+| `studio` | white seamless studio, soft floor shadow, clean type | products, apps, ads, SaaS, anything that should feel premium and clear |
+| `blueprint` | engineering grid and corner marks, mono type | dev tools, how it works, architecture, specs |
+| `brutal` | thick black frame, dotted colour fields, loud colours | startups, creators, offers, anything that should shout |
+| `aurora` | slow glowing colour clouds on dark | AI, wellness, finance, premium launches |
+| `paper` | cream paper, ink-black serif | stories, quotes, books, editorial, memories |
+| `neon` | night grid and a sun, neon glow | music, gaming, nightlife, synthwave, hype |
+| `retro` | halftone dots, pop colours, slab serif | food, fun, community, nostalgia |
+| `chalkboard` | slate board, chalk dust, hand lettering | lessons, recipes, how-to, a teacher's voice |
+| `whiteboard` | white board, marker colours, faint ghost of old writing | explainers, planning, startups |
+| `dotgrid` | notebook dot grid, pen ink | notes, journals, process, sketch thinking |
+| `circuit` | dark board, traces and pads | hardware, dev tools, security |
+| `scope` | phosphor green on black, graticule | data, signals, sci-fi, monitoring |
+| `keynote` | deep gradient stage, big clean type | launches, talks, product reveals |
+| `swiss` | white, red, strict grid, bold sans | brand, editorial, design talk |
+| `kraft` | brown paper, stamped type, twine | craft, shops, packaging, handmade |
+| `lighttable` | pale glass, slide frames, loupe glow | photography, film, archives |
+
+- `theme=None` keeps the original dark look. A theme gives the Film its palette, typeface, finish (`look`) and `bloom` unless you pass your own.
+- Themes only change the scenes' background, colours and type. Pair them with the scene types below: `flat` + `kinetic`/`stages`/`countdown`, `studio` + `product`/`phone`/`versus`, `paper` + `quote`/`highlight`/`timeline`, `neon` + `satisfying`/`kinetic`, `brutal` + `versus`/`chat`/`stick`.
+- Two videos for the same brand should still differ in rhythm and scene mix. Vary the theme, the music genre and the scene order from video to video unless the brand kit fixes them.
+- Custom scenes (`film.custom`) read `film.ink` for the right text colour and can call `film.bg(None, u, n, f)` to paint the theme's background.
+- Light themes need `look="clean"` or the theme's own look; do not add a vignette over them.
+
+## Styles: a whole medium in one word
+
+`Film(style="risograph")` sets theme, whole-picture look, grade, music genre, sound bed and a starting scene mix for a medium at once; anything you pass yourself wins. 49 styles in six families (print, hand-drawn, screens and instruments, technical drawing, film and light, layouts): the full list with what each is for and its signature moves is in `references/styles.md`, and `python3 ~/joyboy/lib/catalog.py find <word>` searches it. Pick the style from the topic and the audience, then use its *native move* (a chalk line wiped and rewritten, a stamp that shakes the page, an edge-drawn sketch that floods with colour) at the peak instead of the first idea.
+
+New scene types for this: `write` (text written out stroke by stroke in `chalk`, `marker` or `pencil`, with its own sound), `sketch` (an image drawn as contours, then colour floods in), `stamp` (a word slammed down with a shake). Whole-picture looks go in `fx=` and combine with any theme: `riso`, `halftone`, `dither`, `engrave`, `bands`, `duotone`, `thermal`, `xray`, `ascii`, `film`, `cel`, `tiltshift`, plus `vhs` and `pixel`; pass `("halftone", {"size": 9})` to tune one.
+
+New music genres (18 in all): `chiptune`, `jazz`, `mallets`, `citypop`, `counterpoint`, `roomtone`. Sounds of matter live in `foley.py`: `chalk marker pencil paper page stamp tape shutter keys relay sonar glass beep knock squeak whirr degauss bell`, usable by name in `sfx=[(seconds, "stamp")]`; under the whole film put a quiet bed with `Film(bed="room")` (`room ballast air tape fan`). Name the *material* of every visible action.
+
+### Finish and checks
+
+Every render is mastered: loudness measured and corrected to about -14 LUFS with a true-peak limiter, film grain added in the encoder, a bitrate cap so files stay small. A render prints `camera:` (3D films need at least four different angles), `reading:` (text on screen long enough to read), `audio:` (real silences, bass balance), `master:`. Fix a warning or say in the final message why it stays. `Film(exact=True)` stops beat-snapping for films cut to a given timing.
+
+### Pictures made by a model (only with the user's consent)
+
+`python3 ~/joyboy/lib/imagegen.py check` shows whether the Codex CLI can generate images; `prompt STYLE "subject"` prints a consistent prompt (shared style suffix, repeated constraints) without running anything; `make ... --yes` generates. **Ask the user before `make`**: it sends the prompt to an outside service and may cost them credits. With consent, generate one reference image first and chain it with `--ref` for every further one so a character stays the same. Without consent, build everything in code or Blender.
+
 ## Look and sound: choose them for each video
 
 No two videos should look or sound the same by accident. The finish on the picture, the music and the automatic sounds are choices made from the brief, like the words and the shots. Decide them on purpose for every video and say in a line what was chosen.
@@ -415,7 +586,17 @@ No two videos should look or sound the same by accident. The finish on the pictu
 - A vignette darkens screenshots, logos near the edge and light backgrounds; turn it off for those. Brand colours shift under `warm`, `cool`, `vintage` and `cinematic`; use `clean` or `none` when they must be exact.
 - Worlds and web scenes get the same finish as everything else, so the look applies to the whole film.
 
-**Music** is generated per video, not per mood.
+**Music** is generated per video, in one of twelve genres.
+
+- `genre=` picks the style, each with its own instruments, groove, tempo range and a melody written from the seed (so two films in the same genre still sound different): `lofi` dusty chords and crackle, `house` four-on-the-floor with pumping stabs, `trap` 808 slides and rolling hats, `synthwave` neon arpeggios, `ambient` slow pads with no drums, `acoustic` plucked guitar and shaker, `funk` slap bass and cowbell, `epic` trailer strings, taiko and brass, `phonk` cowbell melody and distorted 808, `afro` tresillo percussion and marimba, `pop` the bright clean promo sound, `techno` driving kick and acid bass.
+- With no `genre`, the mood and the film's name pick one that suits it (calm: lofi, ambient, acoustic; upbeat: pop, house, funk, afro, acoustic, synthwave; tech: techno, house, synthwave, trap, pop; hype: trap, phonk, techno, house; cinematic: epic, ambient, synthwave, phonk). Name the genre yourself whenever the subject points to one: a bakery wants `acoustic` or `afro`, a gaming reel `phonk` or `trap`, a fintech launch `pop` or `ambient`.
+- `music_seed=<number>` picks another tune in the same genre (melody, key, mode, progression, drums, breakdown); `key=<semitones>`, `energy=` (about 0.5 to 1.4) and `bpm=` still apply. The printed line `music: house, 120 bpm, minor` says what was made.
+- Longer films get an intro bar, a breakdown in the middle and risers and fills into every fourth bar.
+- `genre="classic"` is the original three-arrangement score; `film.music("song.mp3")` uses the user's own track, and `mood="none"` gives no music.
+
+*(The notes below describe the classic score; they still apply when `genre="classic"`.)*
+
+**Classic music** is generated per video, not per mood.
 
 - Each film gets its own variation from a seed made from the film's name: one of three chord sets, a starting point in the loop, a key, and one of three arrangements per mood (for calm: electric piano with bells, piano arpeggio over strings, or a music-box melody over a choir). The same film always gets the same music.
 - `music_seed=<number>` picks another variation; try two or three and keep the one whose printed levels and character fit. `key=<semitones>` moves it up or down, `energy=` (about 0.5 to 1.4) makes it lighter or fuller, `bpm=` changes the tempo, `air=True` adds a soft wind bed under calm music.
@@ -463,6 +644,8 @@ Every scene carries sounds for what it shows, added automatically on top of the 
 | Map route and pins | a scribble while the route draws, a pop as each pin lands |
 | Bullet points arriving | a pop each |
 | Titles and big words landing | a thud |
+| `write` (chalk, marker, pencil) | the matching stroke sound while it writes |
+| `stamp` | a rubber slam and a paper shake |
 | Phone sliding in | a whoosh |
 | Logo traced by light | a shimmer during the trace, then the hit |
 | Letters arriving (closing words) | a light tick per letter |
@@ -516,6 +699,24 @@ Whenever a video needs a person (a customer, an owner, a presenter, a team, two 
 - Licence: check it per style before using it. `avataaars`, `bottts`, `lorelei`, `notionists`, `openPeeps`, `pixelArt` and `thumbs` are free to use without credit. Most others (`adventurer`, `bigEars`, `bigSmile`, `micah`, `personas`, `toonHead`, `croodles`, `funEmoji`, `miniavs`) are CC BY 4.0: add the credit as a `note=` on the scene or tell the user to put it in the description.
 - Illustrated speakers are not real people. Never present their lines as a real customer's review or quote; label them by role ("Guest", "Owner"), not with invented names, and add `note="Illustrated characters"` when the lines could be mistaken for testimonials.
 - Do not model a character on a real, named person.
+
+## 3D work: shoot it from many angles, and build models properly
+
+Anything in 3D (a three.js world, a model, a Blender asset) is shot like a film, from a plan, and every model passes a check before it appears in a video.
+
+**Angles (rules for every 3D film).**
+- **At least four different camera setups** in any film with three or more 3D shots. Vary all three things: *height* (eye level, low looking up, high or top-down), *distance* (wide, medium, close detail) and *movement* (locked, push, pull, orbit, crane). The render prints `camera:` lines when it falls short.
+- Open or close on an **establishing or scale shot** (`wide`, `crane`, `orbit`, `top`, `low`, a model's `hero` or `turntable`); include **one close detail** (`close:<name>`, `prop`, a model's `push`).
+- **Never repeat the same angle back to back** unless it is a dialogue exchange (`two`, `close`, `over`). Change the angle at every cut, or hold one longer shot.
+- A move has a reason: a push means attention, an orbit means "look at the whole thing", a crane up means "see where this is", a low angle gives power, a top-down gives scale or a map.
+- Plan the angles in plan.md section 4 (the camera plan: each shot, its angle, why). Look at **one still per camera** before the full render (`w.still(cam, out)`, `m.still(cam, out)`), in the shape being delivered.
+- For a model, the coverage sheet (below) shows nine angles and lenses at once: pick the ones the film will use from it.
+
+**Models (rules for everything made in Blender or brought in).**
+- Build with **real geometry**: bevels and subdivision applied (a modifier left unapplied exports as a sharp box), smooth shading, a UV map, one material per part, parts named (not `Cube.001`), scale and rotation applied, the lowest point at z=0, under 150k triangles, exported as `.glb`.
+- **A model must PASS `python lib/blender_asset.py qa MODEL`** before it is used: watertight (no open or non-manifold edges), no loose vertices, no zero-area faces, normals pointing outwards, a material on every object, scale applied, UVs present, few n-gons, polygon budget, sits on the ground, sensible size, parts named. A FAIL means fix the model; a WARN is judged case by case. `mascot` runs this check by itself and registers nothing if it fails.
+- **Look at the nine angles**: `python lib/blender_asset.py coverage MODEL NAME` renders front, both three-quarters, side, back, top down, a low hero, a high wide and a close detail (different lenses) into one sheet, saved in the asset library. A model that looks wrong from any angle is not finished; fix it and run again.
+- Models from outside (a file the user supplies): run `qa` first, say what it found, and do not use one with FAILs without telling the user. Never invent or download a model without asking.
 
 ## Worlds: short films, stories and dialogues in a 3D place
 
@@ -654,7 +855,7 @@ m.shot("hero", dur=3, tr="cut")
 - **Check before rendering:** `m.still("hero", "work/hero.png")` draws one frame in well under a second. Look at one still for each camera you plan to use.
 - Shots take `text`, `voice`, `pace`, `note`, `sfx` and `tr` like any scene. Cut between angles with `tr="cut"`; fade only to enter or leave the model.
 - **Files:** a single `.glb` file. A `.gltf` with separate files must be packed into a `.glb` first. Copy the model into the project's `assets/`.
-- It does not create models. If the user has none, say so and offer GSS shapes or a 2D treatment; never invent or download a model without asking.
+- It does not create models itself. If the user has none, make one with Blender (see "Asset library": `blender_asset.py`), check it with `qa` and `coverage` (see "3D work"), or offer GSS shapes or a 2D treatment. Never download a model without asking.
 - It needs the web kit (node, Chrome) and a working GPU in the capture browser, like worlds and GSS.
 - 67.js is new and changes weekly, so the workspace pins one version (`SYSTEM.md` shows it). Do not update it in passing; if a newer version is needed, test a still and a short capture first. Its own MP4 export and MCP server are not used here: the skill's capture is the one route to video, so sound, captions and transitions stay the same for every scene.
 
@@ -770,7 +971,9 @@ Tempo, key, instrumentation and intensity are creative choices for the concept a
 
 ## How to work
 
-0. Run `scripts/setup.sh`, read `SYSTEM.md`, and create `projects/<video-name>/` in the workspace. Work only inside it.
+This is the build part (step 8 of "The workflow"). Steps 0 to 7 come first.
+
+0. Run `scripts/setup.sh`, read `SYSTEM.md`, `TOOLS.md`, `CATALOG.md` and `assets/INDEX.md`, and create `projects/<video-name>/` in the workspace with `plan.py new`. Work only inside it.
 1. Run the brief (see "Brief first, then decide"), then look at the material (artwork, logo, reference video frames, the brand's own words). Decide the concept from that, not from a template.
 2. Lay the film out as shots on a frame timeline. If there is music, pick a tempo where a beat is a whole number of frames so sound and picture share one grid.
 3. Build `frame(f)`: one function per shot using local time `u = f - shot_start`. `frame(f)` must depend only on `f`, because chunks render in parallel and out of order.

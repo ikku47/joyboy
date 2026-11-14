@@ -52,6 +52,7 @@ if os.path.exists(path):
 
 L = [f"# joyboy system checklist", "",
      f"Updated {datetime.datetime.now():%Y-%m-%d %H:%M} by `setup.sh`. Read this first; it says what is ready so nothing is installed twice.", "",
+     "**The workflow** (references/workflow.md): plan first, script last. **Also read `TOOLS.md`** (every tool, app, MCP server, skill and local model on this machine, and which one to use for what) `CATALOG.md` (everything the toolkit can do) and `assets/INDEX.md` (characters, character sheets, sprite sheets and 3D models already made, each with a recipe to rebuild it).", "",
      "## Ready to use", "",
      f"- {box(True)} Workspace: `{ws}`",
      f"- {box(True)} Python {sys.version.split()[0]}: `{sys.executable}`",

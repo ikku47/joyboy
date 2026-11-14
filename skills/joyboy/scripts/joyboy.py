@@ -4,7 +4,7 @@ Call init(w, h, fps) once, write a frame(f) function that returns a uint8 BGR im
 then hand it to run(). Every helper works on float32 BGR images in 0..255 and reads the
 stage size from this module, so the same film code renders portrait or landscape.
 """
-import sys, os, re, subprocess, functools
+import sys, os, re, json, shutil, subprocess, functools
 import numpy as np, cv2
 from PIL import Image, ImageDraw, ImageFont
 
@@ -109,14 +109,14 @@ def letters(txt, size, path, weight, track, cy):
         x += cw + track
     return out
 
-def put_letters(img, ls, u, stagger=4, col=WHITE):
+def put_letters(img, ls, u, stagger=4, col=WHITE, shadow=0.4):
     """u = frames since the reveal started; each letter rises and fades in `stagger` frames after the last."""
     for j, (x0, y0, m, s_) in enumerate(ls):
         w_ = u - j * stagger; op = eo(w_ / 18)
         if op <= 0: continue
         dy = int(round(16 * (1 - eo(w_ / 22)))); reg = img[y0 + dy:y0 + dy + m.shape[0], x0:x0 + m.shape[1]]
         if reg.shape[:2] != m.shape: continue
-        reg *= (1 - 0.4 * op * s_[..., None]); a = (m * op)[..., None]; reg[:] = reg * (1 - a) + np.float32(col) * a
+        reg *= (1 - shadow * op * s_[..., None]); a = (m * op)[..., None]; reg[:] = reg * (1 - a) + np.float32(col) * a
 
 # ---------- the mark (logo) ----------
 def detect_mark(img, lo=238, aspect=(0.6, 1.4), fill=(0.3, 0.9)):
@@ -385,7 +385,30 @@ def cool_down(every=4.0, max_wait=90.0):
     while heat() == "hot" and time.time() - t0 < max_wait: time.sleep(3)
     w = time.time() - t0; _cool["paused"] += w if w > 1 else 0; _cool["t"] = time.time(); return w
 
-def run(frame, total, out, audio=None, crf=20, workers=None):
+def _loud(path, extra=""):
+    """Measure integrated loudness, true peak and range of an audio file with ffmpeg's loudnorm (analysis only). Returns a dict or None."""
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", path, "-af", "loudnorm=I=-14:TP=-1.2:LRA=11:print_format=json" + extra, "-f", "null", "-"], capture_output=True, text=True)
+    m = re.search(r"\{[^{}]*\}", r.stderr, re.S)
+    try: d = json.loads(m.group(0)) if m else None
+    except Exception: return None
+    return d if d and all(str(d.get(k, "inf")) not in ("-inf", "inf", "nan") for k in ("input_i", "input_tp", "input_lra", "input_thresh", "target_offset")) else None
+
+def master(audio, target=-14.0, log=print):
+    """Master the mix like a delivery: loudness normalised to -14 LUFS in two passes, then an oversampled limiter so that the AAC encode cannot go over about -1 dB true peak,
+    repeated (up to three times) until the measured loudness is within 0.6 LU of the target. Prints what was measured. A silent or unmeasurable mix is passed through untouched.
+    Returns the path of the audio to use."""
+    d = _loud(audio)
+    if not d or float(d["input_i"]) < -65: log("master: the audio is silent or too quiet to measure; left as it is"); return audio
+    out = os.path.splitext(audio)[0] + ".master.wav"; pre = "volume=-%.1fdB," % (float(d["input_i"]) + 14) if float(d["input_i"]) > 0 else ""; tgt = target; e = None
+    for _ in range(3):
+        af = pre + "loudnorm=I=%g:TP=-2.0:LRA=11:measured_I=%s:measured_TP=%s:measured_LRA=%s:measured_thresh=%s:offset=%s:linear=true,aresample=176400,alimiter=limit=0.83:attack=2:release=30:level=disabled,aresample=44100" % (tgt, d["input_i"], d["input_tp"], d["input_lra"], d["input_thresh"], d["target_offset"])
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", audio, "-af", af, "-ar", "44100", "-ac", "2", out], check=True); e = _loud(out)
+        if not e or abs(float(e["input_i"]) - target) <= 0.6: break
+        tgt += target - float(e["input_i"])                                                      # the limiter took some loudness (or loudnorm left some): aim again
+    if e: log("master: %.1f LUFS (target %g), true peak %.1f dB, range %.1f LU%s" % (float(e["input_i"]), target, float(e["input_tp"]), float(e["input_lra"]), "" if abs(float(e["input_i"]) - target) <= 1.0 and float(e["input_tp"]) < -0.5 else "  <- off target"))
+    return out
+
+def run(frame, total, out, audio=None, crf=21, workers=None, grain=0, master_audio=True):
     """CLI for a film script. `frame(f)` returns uint8 BGR (H, W, 3).
       python film.py sheet out.jpg 0 40 80 ...   contact sheet of chosen frames (do this first, and look at it)
       python film.py                              render everything in parallel chunks, then mux with `audio`
@@ -403,11 +426,12 @@ def run(frame, total, out, audio=None, crf=20, workers=None):
         try: os.nice(8)                                   # render below everything else, so the machine stays responsive
         except Exception: pass
         ff = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-threads", "2", "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-", "-an",
-                               "-c:v", "libx264", "-crf", str(crf), "-maxrate", "14M", "-bufsize", "28M", "-preset", "medium", "-pix_fmt", "yuv420p", "-bsf:v", "h264_mp4toannexb", "-f", "mpegts", f"{tmp}.{i:02d}.ts"], stdin=subprocess.PIPE)
+                               "-c:v", "libx264", "-crf", str(crf), "-maxrate", "9M", "-bufsize", "18M", "-preset", "medium", "-pix_fmt", "yuv420p"] + (["-vf", "noise=alls=%d:allf=t" % max(1, round(grain * 255 * 0.9)), "-tune", "grain"] if grain > 0 else []) + [ "-bsf:v", "h264_mp4toannexb", "-f", "mpegts", f"{tmp}.{i:02d}.ts"], stdin=subprocess.PIPE)
         for f in range(f0, f1): ff.stdin.write(np.ascontiguousarray(frame(f)).tobytes()); cool_down()
         ff.stdin.close(); ff.wait()
         if _cool["paused"] > 1: print(f"chunk {i}: paused {_cool['paused']:.0f}s to let the machine cool")
         return
+    if audio and master_audio and os.environ.get("JOYBOY_MASTER", "1") != "0": audio = master(audio)
     n = workers or gentle_workers()
     ps = [subprocess.Popen([sys.executable, sys.argv[0], "chunk", str(i), str(n)]) for i in range(n)]
     if any(p.wait() for p in ps): sys.exit("a chunk failed; run `chunk i n` directly to see the error")

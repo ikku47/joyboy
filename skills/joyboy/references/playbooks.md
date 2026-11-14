@@ -29,6 +29,41 @@ Starting points for speed, not rules. Every one of these opens with `intro` and 
 | Logo-led graphic reel | 6-12 s | hype | any of `window`, `slices`, `carousel`, `grid`, `tunnel`, `loader`, with `words` between, then `outro` |
 | Pure motion graphics | 5-15 s | tech or hype | `words`, `grid`, `tunnel`, `loader`, shape-wipe transitions between flat colour `title` cards, `end` |
 
+## Formats that are working on Instagram, TikTok and Shorts right now
+
+Found by reading the current feeds (kinetic type, product ads, explainers, "stages of", timestamps, Claude-made shorts). Each row names the theme, genre and scenes that fit. Pair a theme and a genre on purpose; do not leave both to the defaults.
+
+| Format | Length | Theme, genre | Scenes |
+|---|---|---|---|
+| Kinetic-type hook / manifesto ("stop scrolling, start building") | 8-20 s | `flat`, `trap` or `house`, mood hype | `intro`, `kinetic` (`blur` or `slide`, `hl=` on the payoff word), `kinetic` again with another style, `outro` |
+| Relatable "5 stages of being..." | 10-20 s | `flat` or `brutal`, `pop` or `phonk` | `intro`, `stages(title, items)` with five short moods, `outro` |
+| Timestamps / one appointment / day in the life | 15-30 s | `paper` or `studio`, `lofi` | `intro`, `timeline` (maybe two), `highlight` for the closing line, `outro` |
+| Top N listicle | 20-45 s | `flat` or `brutal`, `pop` or `funk` | `intro`, `countdown(items, title)`, `outro` |
+| Product hero ad | 10-25 s | `studio`, `pop` or `house` | `intro`, `product` with callouts, `stat` for the offer, `outro` |
+| Premium / AI product launch | 15-30 s | `aurora`, `ambient` or `synthwave` | `intro`, `kinetic` on a calm style, `phone` demo, `highlight`, `outro` |
+| SaaS or app explainer ("how modern brands should market") | 25-45 s | `studio` or `blueprint`, `techno` or `pop` | `intro`, `anatomy` of the structure, `phone` or `browser` x2, `bullets`, `outro` |
+| Dev tool / how it works | 20-40 s | `blueprint`, `techno` | `intro`, `crt`, `timeline` or `stages`, `phone`, `outro` |
+| Before / after transformation | 8-15 s | any, `house` | `intro`, `before_after` (images) or `versus` (ideas), `outro` |
+| Comparison / "us vs them" | 10-20 s | `brutal` or `flat`, `funk` | `intro`, `versus`, `stat`, `outro` |
+| Text-message story / skit | 15-40 s | `brutal` or `studio`, `lofi` or none | `intro`, `chat` (several), `kinetic` for the punchline, `outro` |
+| Stickman story or explainer | 20-60 s | `paper` or `flat`, `acoustic` or `afro` | `intro`, a run of `stick(action, text)` scenes (walk, think, point, celebrate), `highlight`, `outro` |
+| Satisfying / calming loop | 10-30 s | `neon` or `aurora`, `ambient` or `lofi` | `intro` short, `satisfying` x1-3 in different styles, `outro` |
+| Caption-style talking point (a voice over simple words) | 15-45 s | `paper` or `studio`, `lofi` or `pop` | `highlight` per idea with `voice=`, `quote`, `outro` |
+| Nightlife / music / gaming reel | 8-20 s | `neon`, `phonk` or `synthwave` | `kinetic` (`zoom`, `spin`), `satisfying`, `loader`, `outro` |
+| "Built with one prompt" AI / dev showcase | 8-20 s | `blueprint`, `techno` or `synthwave` | `intro`, `wire` (cylinder, torus, cube), `crt` or `timeline`, `cta` ("Comment KEYWORD for the setup"), `outro` |
+| AI-and-client comedy skit (the @buildwithmari_ format: 27x its follower count) | 15-30 s | `aurora` or none, `lofi` or no music | `intro` hook caption, alternating `skit("head", ...)` and `skit("cube", ...)` lines (3-6 beats, deadpan, one absurd request), a `skit` with `pip=` for the work, `laptop` POV for the payoff, `cta("OM", "and I'll send the template")`, `outro` |
+| Lead-magnet reel (comment for the link) | 10-25 s | any, `pop` or `house` | `intro` hook, one proof scene (`product`, `phone`, `stat`), `cta(keyword, text)`, `outro` |
+| Apple Notes-style ad | 10-20 s | `paper` or `studio`, `lofi` | `intro`, `notes` (a checklist that ends on the product), `highlight`, `outro` |
+| Social proof / testimonials | 10-20 s | `studio` or `brutal`, `pop` | `intro`, `review` with 3-4 quotes, `stat`, `cta`, `outro` |
+| Wrapped / year-in-review recap | 20-40 s | `flat` or `aurora`, `pop` or `house` | `intro`, `wrapped` (4-6 stats, one ranked list), `outro` |
+| Lyric video | 20-60 s | `neon`, `aurora` or `paper`, the user's own track | `intro`, `lyrics` (one line per beat pair), `outro`; `film.music(...)` |
+| Changelog / release video | 10-25 s | `studio` or `blueprint`, `techno` or `pop` | `intro`, `changelog`, `phone` or `browser` for the headline feature, `outro` |
+| VHS / pixel retro piece | 8-20 s | `retro` or `neon` with `fx="vhs"` or `fx="pixel"`, `synthwave` | any scenes; the fx covers the whole film |
+| Food / community / fun promo | 10-25 s | `retro`, `afro` or `acoustic` | `image` with captions, `kinetic`, `countdown`, `outro` |
+
+How to avoid sameness: for any series of videos, change at least two of theme, genre and the main scene type from one video to the next, and say which you chose.
+
+
 ## Choosing quickly
 
 - **Shape:** portrait for phones and social feeds, landscape for YouTube and presentations, square or 4:5 for feed posts. If unsure, portrait.

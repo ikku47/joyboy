@@ -108,7 +108,9 @@ class Score:
         if name == "shimmer": t = self.n(dur or 1.5); x = t / t[-1]; return sum(np.sin(2 * np.pi * mf(m) * t * (1 + 0.002 * np.sin(11 * t + m))) for m in (86, 93, 98, 102)) * x ** 1.5 * (0.6 + 0.4 * np.sin(2 * np.pi * 9 * t)) * 0.25
         if name == "whoosh": return self.whoosh(dur or 0.45)
         if name == "click": return self.click()
-        raise ValueError("unknown sound: " + name)
+        import foley
+        if name in foley.NAMES: return foley.make(self, name, dur, pitch)
+        raise ValueError("unknown sound: " + name + " (also: " + ", ".join(foley.NAMES) + ")")
 
     # ----- ambience -----
     def wind(self, f0, f1, g=0.11):
